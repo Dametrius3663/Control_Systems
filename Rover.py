@@ -1,6 +1,6 @@
 import cv2
 import numpy as np
-from picarx import Picarx
+from picarx import Picarxcd
 import time
 
 def generate_aruco_markers():
