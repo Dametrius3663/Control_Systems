@@ -1,4 +1,4 @@
-from picarx import Picarxcd
+from picarx import Picarx
 import time
 import cv2
 import yaml
