@@ -113,10 +113,10 @@ def main():
                         break
 
             # Check for obstacles
-            front_distance = px.get_distance_at(0)  # front distance: get within 1 Meter 
+            front_distance = px.get_distance_at(0)  # front distance
 
             if front_distance < obstacle_threshold:
-                # Obstacle detected, stop and turn to avoid obstacle
+                # Obstacle detected
                 px.stop()
                 px.set_dir_servo_angle(turn_angle if not reverse_mode else -turn_angle)
                 time.sleep(0.5)
@@ -128,7 +128,7 @@ def main():
                 px.set_dir_servo_angle(0)
             else:
                 if is_turn_state(current_state):
-                    # Perform turn 180 or 90 degrees then retrace steps 
+                    # Perform turn 
                     if current_state == STATE_TURN_LEFT:
                         px.set_dir_servo_angle(90)
                         time.sleep(1)
