@@ -1,6 +1,8 @@
 from picarx import Picarx
 import time
 import cv2
+import yaml
+import numpy as np
 
 px = Picarx()
 
@@ -9,12 +11,33 @@ px = Picarx()
 # -----------------------------
 cap = cv2.VideoCapture(0)
 
-# CHANGE THESE AFTER CALIBRATION
+# Load calibration data from Vision folder
+try:
+    with open('Vision/calibration_params.yml', 'r') as f:
+        calibration_data = yaml.safe_load(f)
+    
+    cam_matrix = np.array(calibration_data['camera_matrix'], dtype=np.float32)
+    dist_coeffs = np.array(calibration_data['dist_coeff'], dtype=np.float32)
+    
+    # Use focal length from camera matrix
+    FOCAL_LENGTH = cam_matrix[0][0]  # fx from camera matrix
+    print(f"Loaded calibration data. Focal length: {FOCAL_LENGTH}")
+    
+except FileNotFoundError:
+    print("Warning: calibration_params.yml not found in Vision folder. Using default values.")
+    FOCAL_LENGTH = 500  # fallback
+    cam_matrix = None
+    dist_coeffs = None
+
+# CHANGE THIS AFTER CALIBRATION
 KNOWN_WIDTH = 10.0  # cm
-FOCAL_LENGTH = 500  # estimate first, then refine
 
 
 def camera_distance_test(frame):
+    # Undistort the frame if calibration data is available
+    if cam_matrix is not None and dist_coeffs is not None:
+        frame = cv2.undistort(frame, cam_matrix, dist_coeffs)
+    
     gray = cv2.cvtColor(frame, cv2.COLOR_BGR2GRAY)
     _, thresh = cv2.threshold(gray, 100, 255, cv2.THRESH_BINARY)
 
