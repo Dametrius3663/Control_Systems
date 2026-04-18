@@ -1,6 +1,7 @@
 import cv2
 import numpy as np
 from picarx import Picarxcd
+import threading
 import time
 
 # Hardware
@@ -26,52 +27,129 @@ dist_coeffs = np.zeros((5, 1))
 speed = 30
 turn_angle = 30
 obstacle_threshold = 30  # cm
-marker1_threshold = 0.6  # 24 inches
-marker4_threshold = 0.61  # 24 inches
-marker5_threshold = 0.91  # 36 inches
+marker_close_area = 0.02  # marker covers this fraction of frame area when close enough
 
 # States
 STATE_SEARCH_1 = 0
 STATE_APPROACH_1 = 1
-STATE_SEARCH_2_3 = 2
-STATE_DRIVE_BETWEEN_2_3 = 3
-STATE_SEARCH_4 = 4
-STATE_APPROACH_4 = 5
-STATE_TURN_LEFT_TO_5 = 6
-STATE_SEARCH_5 = 7
-STATE_APPROACH_5 = 8
-STATE_TURN_AROUND = 9
-STATE_REVERSE_SEARCH_4 = 10
-STATE_REVERSE_APPROACH_4 = 11
-STATE_REVERSE_SEARCH_2_3 = 12
-STATE_REVERSE_DRIVE_BETWEEN_2_3 = 13
-STATE_REVERSE_SEARCH_1 = 14
-STATE_REVERSE_APPROACH_1 = 15
-STATE_DONE = 16
+STATE_SEARCH_2 = 2
+STATE_APPROACH_2 = 3
+STATE_SEARCH_3 = 4
+STATE_APPROACH_3 = 5
+STATE_SEARCH_4 = 6
+STATE_APPROACH_4 = 7
+STATE_SEARCH_5 = 8
+STATE_APPROACH_5 = 9
+STATE_TURN_AROUND = 10
+STATE_REVERSE_SEARCH_4 = 11
+STATE_REVERSE_APPROACH_4 = 12
+STATE_REVERSE_SEARCH_3 = 13
+STATE_REVERSE_APPROACH_3 = 14
+STATE_REVERSE_SEARCH_2 = 15
+STATE_REVERSE_APPROACH_2 = 16
+STATE_REVERSE_SEARCH_1 = 17
+STATE_REVERSE_APPROACH_1 = 18
+STATE_DONE = 19
 
 current_state = STATE_SEARCH_1
 reverse_mode = False
 
+# Obstacle avoidance background monitor
+obstacle_data = {
+    "distance_cm": None,
+    "detected": False,
+    "last_check": 0.0,
+}
+obstacle_lock = threading.Lock()
+avoidance_shutdown = threading.Event()
 
-def get_marker_data(corners, ids, tvecs):
+
+def get_front_distance():
+    if hasattr(px, "ultrasonic"):
+        try:
+            return float(px.ultrasonic.read())
+        except Exception:
+            pass
+    if hasattr(px, "get_distance_at"):
+        try:
+            return float(px.get_distance_at(0))
+        except Exception:
+            pass
+    return None
+
+
+def object_avoidance_loop():
+    while not avoidance_shutdown.is_set():
+        dist = get_front_distance()
+        with obstacle_lock:
+            if dist is not None:
+                obstacle_data["distance_cm"] = dist
+                obstacle_data["detected"] = dist < obstacle_threshold
+                obstacle_data["last_check"] = time.time()
+            else:
+                obstacle_data["detected"] = False
+        time.sleep(0.1)
+
+
+def perform_obstacle_avoidance():
+    stop_car()
+    px.set_dir_servo_angle(0)
+    # Back up briefly before turning
+    px.backward(speed)
+    time.sleep(0.5)
+    px.stop()
+
+    # Turn away from the obstacle
+    turn_dir = -turn_angle if reverse_mode else turn_angle
+    px.set_dir_servo_angle(turn_dir)
+    px.forward(speed)
+    time.sleep(0.8)
+    px.stop()
+    px.set_dir_servo_angle(0)
+
+
+def get_marker_data(corners, ids, tvecs, frame_area):
     data = {}
     if ids is None:
         return data
     for i, id_val in enumerate(ids.flatten()):
         center = np.mean(corners[i][0], axis=0)
         distance = float(np.linalg.norm(tvecs[i][0]))
+        xs = corners[i][0][:, 0]
+        ys = corners[i][0][:, 1]
+        bbox_area = float((xs.max() - xs.min()) * (ys.max() - ys.min()))
+        area_ratio = bbox_area / frame_area if frame_area > 0 else 0.0
         data[int(id_val)] = {
             "center": center,
             "distance": distance,
             "corners": corners[i][0],
+            "area_ratio": area_ratio,
         }
     return data
+
+
+def marker_is_close(marker, threshold=marker_close_area):
+    return marker is not None and marker.get("area_ratio", 0.0) >= threshold
 
 
 def steer_from_pixel(center_x, frame_width, k_p=0.15, max_angle=45):
     error = center_x - frame_width / 2
     steer_angle = -error * k_p
     return float(np.clip(steer_angle, -max_angle, max_angle))
+
+
+def turn_right():
+    px.stop()
+    px.set_dir_servo_angle(-90)
+    time.sleep(1)
+    px.set_dir_servo_angle(0)
+
+
+def turn_left():
+    px.stop()
+    px.set_dir_servo_angle(90)
+    time.sleep(1)
+    px.set_dir_servo_angle(0)
 
 
 def stop_car():
@@ -91,13 +169,6 @@ def search_motion():
     px.set_dir_servo_angle(0)
 
 
-def turn_left():
-    px.stop()
-    px.set_dir_servo_angle(90)
-    time.sleep(1)
-    px.set_dir_servo_angle(0)
-
-
 def turn_around():
     px.stop()
     px.set_dir_servo_angle(180)
@@ -108,6 +179,9 @@ def turn_around():
 def main():
     global current_state, reverse_mode
     try:
+        avoidance_thread = threading.Thread(target=object_avoidance_loop, daemon=True)
+        avoidance_thread.start()
+
         while current_state != STATE_DONE:
             ret, frame = cap.read()
             if not ret:
@@ -120,24 +194,23 @@ def main():
             if ids is not None and len(corners) > 0:
                 rvecs, tvecs, _ = cv2.aruco.estimatePoseSingleMarkers(
                     corners, marker_length, camera_matrix, dist_coeffs)
-                marker_data = get_marker_data(corners, ids, tvecs)
+                frame_area = frame.shape[0] * frame.shape[1]
+                marker_data = get_marker_data(corners, ids, tvecs, frame_area)
+
+            with obstacle_lock:
+                obstacle_detected = obstacle_data["detected"]
+                obstacle_distance = obstacle_data["distance_cm"]
+
+            if obstacle_detected:
+                print(f"Obstacle detected at {obstacle_distance:.1f} cm, avoiding")
+                perform_obstacle_avoidance()
+                continue
 
             marker1 = marker_data.get(1)
             marker2 = marker_data.get(2)
             marker3 = marker_data.get(3)
             marker4 = marker_data.get(4)
             marker5 = marker_data.get(5)
-
-            front_distance = px.get_distance_at(0)
-
-            if front_distance < obstacle_threshold:
-                stop_car()
-                px.set_dir_servo_angle(turn_angle if not reverse_mode else -turn_angle)
-                time.sleep(0.5)
-                px.forward(speed)
-                time.sleep(1)
-                px.set_dir_servo_angle(0)
-                continue
 
             if current_state == STATE_SEARCH_1:
                 if marker1:
@@ -146,31 +219,46 @@ def main():
                     search_motion()
 
             elif current_state == STATE_APPROACH_1:
-                if marker1 and marker1["distance"] < marker1_threshold:
+                if marker_is_close(marker1):
                     stop_car()
-                    current_state = STATE_SEARCH_2_3
+                    current_state = STATE_SEARCH_2
                 elif marker1:
                     steer = steer_from_pixel(marker1["center"][0], frame.shape[1])
                     drive_forward(steer)
                 else:
                     current_state = STATE_SEARCH_1
 
-            elif current_state == STATE_SEARCH_2_3:
-                if marker2 and marker3:
-                    current_state = STATE_DRIVE_BETWEEN_2_3
+            elif current_state == STATE_SEARCH_2:
+                if marker2:
+                    current_state = STATE_APPROACH_2
                 else:
                     search_motion()
 
-            elif current_state == STATE_DRIVE_BETWEEN_2_3:
-                if marker4:
+            elif current_state == STATE_APPROACH_2:
+                if marker_is_close(marker2):
                     stop_car()
-                    current_state = STATE_SEARCH_4
-                elif marker2 and marker3:
-                    midpoint = (marker2["center"][0] + marker3["center"][0]) / 2
-                    steer = steer_from_pixel(midpoint, frame.shape[1])
+                    current_state = STATE_SEARCH_3
+                elif marker2:
+                    steer = steer_from_pixel(marker2["center"][0], frame.shape[1])
                     drive_forward(steer)
                 else:
-                    current_state = STATE_SEARCH_2_3
+                    current_state = STATE_SEARCH_2
+
+            elif current_state == STATE_SEARCH_3:
+                if marker3:
+                    current_state = STATE_APPROACH_3
+                else:
+                    search_motion()
+
+            elif current_state == STATE_APPROACH_3:
+                if marker_is_close(marker3):
+                    stop_car()
+                    current_state = STATE_SEARCH_4
+                elif marker3:
+                    steer = steer_from_pixel(marker3["center"][0], frame.shape[1])
+                    drive_forward(steer)
+                else:
+                    current_state = STATE_SEARCH_3
 
             elif current_state == STATE_SEARCH_4:
                 if marker4:
@@ -179,18 +267,14 @@ def main():
                     search_motion()
 
             elif current_state == STATE_APPROACH_4:
-                if marker4 and marker4["distance"] < marker4_threshold:
+                if marker_is_close(marker4):
                     stop_car()
-                    current_state = STATE_TURN_LEFT_TO_5
+                    current_state = STATE_SEARCH_5
                 elif marker4:
                     steer = steer_from_pixel(marker4["center"][0], frame.shape[1])
                     drive_forward(steer)
                 else:
                     current_state = STATE_SEARCH_4
-
-            elif current_state == STATE_TURN_LEFT_TO_5:
-                turn_left()
-                current_state = STATE_SEARCH_5
 
             elif current_state == STATE_SEARCH_5:
                 if marker5:
@@ -199,7 +283,7 @@ def main():
                     search_motion()
 
             elif current_state == STATE_APPROACH_5:
-                if marker5 and marker5["distance"] < marker5_threshold:
+                if marker_is_close(marker5):
                     stop_car()
                     current_state = STATE_TURN_AROUND
                 elif marker5:
@@ -220,34 +304,55 @@ def main():
                     search_motion()
 
             elif current_state == STATE_REVERSE_APPROACH_4:
-                if marker4 and marker4["distance"] < marker4_threshold:
+                if marker_is_close(marker4):
                     stop_car()
-                    current_state = STATE_REVERSE_SEARCH_2_3
+                    current_state = STATE_REVERSE_SEARCH_3
                 elif marker4:
                     steer = steer_from_pixel(marker4["center"][0], frame.shape[1])
                     drive_forward(steer)
                 else:
                     current_state = STATE_REVERSE_SEARCH_4
 
-            elif current_state == STATE_REVERSE_SEARCH_2_3:
-                if marker2 and marker3:
-                    current_state = STATE_REVERSE_DRIVE_BETWEEN_2_3
+            elif current_state == STATE_REVERSE_SEARCH_3:
+                if marker3:
+                    current_state = STATE_REVERSE_APPROACH_3
                 else:
                     search_motion()
 
-            elif current_state == STATE_REVERSE_DRIVE_BETWEEN_2_3:
-                if marker1:
+            elif current_state == STATE_REVERSE_APPROACH_3:
+                if marker_is_close(marker3):
                     stop_car()
-                    current_state = STATE_REVERSE_APPROACH_1
-                elif marker2 and marker3:
-                    midpoint = (marker2["center"][0] + marker3["center"][0]) / 2
-                    steer = steer_from_pixel(midpoint, frame.shape[1])
+                    current_state = STATE_REVERSE_SEARCH_2
+                elif marker3:
+                    steer = steer_from_pixel(marker3["center"][0], frame.shape[1])
                     drive_forward(steer)
                 else:
-                    current_state = STATE_REVERSE_SEARCH_2_3
+                    current_state = STATE_REVERSE_SEARCH_3
+
+            elif current_state == STATE_REVERSE_SEARCH_2:
+                if marker2:
+                    current_state = STATE_REVERSE_APPROACH_2
+                else:
+                    search_motion()
+
+            elif current_state == STATE_REVERSE_APPROACH_2:
+                if marker_is_close(marker2):
+                    stop_car()
+                    current_state = STATE_REVERSE_SEARCH_1
+                elif marker2:
+                    steer = steer_from_pixel(marker2["center"][0], frame.shape[1])
+                    drive_forward(steer)
+                else:
+                    current_state = STATE_REVERSE_SEARCH_2
+
+            elif current_state == STATE_REVERSE_SEARCH_1:
+                if marker1:
+                    current_state = STATE_REVERSE_APPROACH_1
+                else:
+                    search_motion()
 
             elif current_state == STATE_REVERSE_APPROACH_1:
-                if marker1 and marker1["distance"] < marker1_threshold:
+                if marker_is_close(marker1):
                     stop_car()
                     current_state = STATE_DONE
                 elif marker1:
@@ -274,6 +379,7 @@ def main():
     except KeyboardInterrupt:
         print("Interrupted")
     finally:
+        avoidance_shutdown.set()
         stop_car()
         cap.release()
         cv2.destroyAllWindows()
