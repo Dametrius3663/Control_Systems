@@ -10,66 +10,58 @@ cap = cv2.VideoCapture(0)
 face_cascade = cv2.CascadeClassifier(
     '/usr/share/opencv4/haarcascades/haarcascade_frontalface_default.xml'
 )
-# Control parameters
-STEER_GAIN = 0.05
-MAX_STEER = 30
+# Gains (tune these)
+PAN_GAIN = 0.08
+TILT_GAIN = 0.08
 
-TARGET_FACE_SIZE = 200  # desired width of face (pixels)
-SPEED_FORWARD = 30
-SPEED_BACKWARD = -20
+PAN_MAX = 45
+TILT_MAX = 30
 
-def stop():
-    px.forward(0)
-    px.set_dir_servo_angle(0)
+pan_angle = 0
+tilt_angle = 0
 
-try:
-    while True:
-        ret, frame = cap.read()
-        if not ret:
-            break
+def clamp(val, min_v, max_v):
+    return max(min_v, min(max_v, val))
 
-        gray = cv2.cvtColor(frame, cv2.COLOR_BGR2GRAY)
-        faces = face_cascade.detectMultiScale(gray, 1.3, 5)
+while True:
+    ret, frame = cap.read()
+    if not ret:
+        break
 
-        h, w = frame.shape[:2]
+    h, w = frame.shape[:2]
+    cx, cy = w // 2, h // 2
 
-        if len(faces) > 0:
-            # Pick largest face (closest)
-            face = max(faces, key=lambda f: f[2]*f[3])
-            (x, y, fw, fh) = face
+    gray = cv2.cvtColor(frame, cv2.COLOR_BGR2GRAY)
+    faces = face_cascade.detectMultiScale(gray, 1.3, 5)
 
-            face_center_x = x + fw / 2
-            frame_center_x = w / 2
+    if len(faces) > 0:
+        # pick largest face
+        x, y, fw, fh = max(faces, key=lambda f: f[2]*f[3])
 
-            error = face_center_x - frame_center_x
+        fx = x + fw // 2
+        fy = y + fh // 2
 
-            # Steering
-            steer = -error * STEER_GAIN
-            steer = float(np.clip(steer, -MAX_STEER, MAX_STEER))
-            px.set_dir_servo_angle(steer)
+        # errors
+        err_x = fx - cx
+        err_y = fy - cy
 
-            # Distance control
-            if fw < TARGET_FACE_SIZE - 20:
-                px.forward(SPEED_FORWARD)   # too far → move forward
-            elif fw > TARGET_FACE_SIZE + 20:
-                px.forward(SPEED_BACKWARD)  # too close → back up
-            else:
-                px.forward(0)               # perfect distance
+        # update servos
+        pan_angle -= err_x * PAN_GAIN
+        tilt_angle += err_y * TILT_GAIN
 
-            # Draw box
-            cv2.rectangle(frame, (x, y), (x+fw, y+fh), (0,255,0), 2)
+        pan_angle = clamp(pan_angle, -PAN_MAX, PAN_MAX)
+        tilt_angle = clamp(tilt_angle, -TILT_MAX, TILT_MAX)
 
-            print(f"Face width: {fw}, Steer: {steer:.1f}")
+        px.set_cam_pan_angle(pan_angle)
+        px.set_cam_tilt_angle(tilt_angle)
 
-        else:
-            # No face → stop or slowly search
-            stop()
+        # draw
+        cv2.rectangle(frame, (x,y), (x+fw,y+fh), (0,255,0), 2)
 
-        cv2.imshow("Face Follow", frame)
-        if cv2.waitKey(1) == 27:
-            break
+    cv2.imshow("Face Track", frame)
 
-finally:
-    stop()
-    cap.release()
-    cv2.destroyAllWindows()
+    if cv2.waitKey(1) == 27:
+        break
+
+cap.release()
+cv2.destroyAllWindows()
