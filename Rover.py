@@ -57,6 +57,7 @@ STATE_DONE = 19
 current_state = STATE_SEARCH_1
 reverse_mode = False
 current_pan = 0  # Track current pan position for non-blocking pan
+speed = 30
 
 def get_marker_data(corners, ids, tvecs, frame_area):
     data = {}
@@ -106,10 +107,6 @@ def reset_pan():
     px.set_cam_pan_angle(0)
 
 
-# Movement
-speed = 30
-
-
 def track_marker(marker, frame_width, current_pan=0):
     """Pan camera to track marker, then steer car to align with marker."""
     if marker:
@@ -128,8 +125,6 @@ def track_marker(marker, frame_width, current_pan=0):
         steer = -pan_error * 0.05
         steer = float(np.clip(steer, -30, 30))
         px.set_dir_servo_angle(steer)
-
-        # Drive forward while tracking
         px.forward(speed)
 
         print(f"Marker x: {marker_x:.0f}, Error: {pan_error:.0f}, Pan: {new_pan:.1f}, Steer: {steer:.1f}")
@@ -140,7 +135,7 @@ def track_marker(marker, frame_width, current_pan=0):
 
 def stop_car():
     px.stop()
-    #px.set_dir_servo_angle(0)
+    px.set_dir_servo_angle(0)
 
 
 def main(headless=False):
