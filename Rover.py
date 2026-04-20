@@ -106,6 +106,10 @@ def reset_pan():
     px.set_cam_pan_angle(0)
 
 
+# Movement
+speed = 30
+
+
 def track_marker(marker, frame_width, current_pan=0):
     """Pan camera to track marker, then steer car to align with marker."""
     if marker:
@@ -114,15 +118,18 @@ def track_marker(marker, frame_width, current_pan=0):
 
         # Pan camera toward marker (keep head flexible to see marker)
         pan_error = marker_x - frame_center
-        new_pan1 = current_pan + pan_error * 0.1
-        new_pan = float(np.clip(new_pan1, -45, 45))
+        new_pan = current_pan + pan_error * 0.01
+        new_pan = float(np.clip(new_pan, -45, 45))
         px.set_cam_pan_angle(new_pan)
 
-        # Steer based on marker position in frame - not camera pan
+        # Steer based on marker position in frame - smooth interpolation
         # Marker left of center = steer left, marker right = steer right
-        steer = -pan_error * 0.15  # Negative because left (low x) should steer left (negative angle)
-        steer1 = float(np.clip(steer, -45, 45))
-        px.set_dir_servo_angle(steer1)
+        steer = -pan_error * 0.08
+        steer = float(np.clip(steer, -30, 30))
+        px.set_dir_servo_angle(steer)
+
+        # Drive forward while tracking
+        px.forward(speed)
 
         return new_pan
     return current_pan
