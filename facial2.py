@@ -83,9 +83,9 @@ while True:
         # 2. STEERING (rotate car)
         # -----------------------------
         if abs(err_x) < 10:
-            err_xs = 0
+            err_x = 0
             err_y = 0
-        steer = err_xs * STEER_GAIN
+        steer = err_x * STEER_GAIN
         steer = clamp(steer, -STEER_MAX, STEER_MAX)
         px.set_dir_servo_angle(steer)
 
