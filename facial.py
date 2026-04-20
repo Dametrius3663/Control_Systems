@@ -6,10 +6,8 @@ px = Picarx()
 
 cap = cv2.VideoCapture(0)
 
-# Load face detector
-face_cascade = cv2.CascadeClassifier(
-    cv2.data.haarcascades + 'haarcascade_frontalface_default.xml'
-)
+# Load face detector'
+face_cascade = cv2.CascadeClassifier('Control_Systems/haarcascade_frontalface_default.xml')
 
 # Control parameters
 STEER_GAIN = 0.05
