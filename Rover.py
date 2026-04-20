@@ -24,10 +24,12 @@ marker_length = 0.05  # 5cm markers
 camera_matrix = np.array([[640, 0, 320], [0, 640, 240], [0, 0, 1]], dtype=np.float32)
 dist_coeffs = np.zeros((5, 1))
 
-# Movement parameters
-speed = 30
-turn_angle = 30
-marker_close_area = 0.02  # marker covers this fraction of frame area when close enough
+# Pan parameters
+pan_start = -45  # degrees
+pan_end = 45
+pan_step = 2
+pan_delay = 0.05  # seconds between steps
+marker_close_area = 1
 
 # States
 STATE_SEARCH_1 = 0
@@ -84,41 +86,23 @@ def steer_from_pixel(center_x, frame_width, k_p=0.15, max_angle=45):
     return float(np.clip(steer_angle, -max_angle, max_angle))
 
 
-def turn_right():
-    px.stop()
-    px.set_dir_servo_angle(-90)
-    time.sleep(1)
+def pan_once():
+    """Pan the camera/servo slowly from left to right once."""
+    for angle in range(pan_start, pan_end + 1, pan_step):
+        px.set_dir_servo_angle(angle)
+        time.sleep(pan_delay)
     px.set_dir_servo_angle(0)
 
 
-def turn_left():
-    px.stop()
-    px.set_dir_servo_angle(90)
-    time.sleep(1)
-    px.set_dir_servo_angle(0)
+def lock_on_marker(marker, frame_width):
+    """Lock steering to keep marker centered, without driving."""
+    if marker:
+        steer = steer_from_pixel(marker["center"][0], frame_width)
+        px.set_dir_servo_angle(steer)
 
 
 def stop_car():
     px.stop()
-    px.set_dir_servo_angle(0)
-
-
-def drive_forward(steer_angle=0):
-    px.set_dir_servo_angle(steer_angle)
-    px.forward(speed)
-
-
-def search_motion():
-    px.set_dir_servo_angle(turn_angle if not reverse_mode else -turn_angle)
-    px.forward(speed)
-    time.sleep(0.5)
-    px.set_dir_servo_angle(0)
-
-
-def turn_around():
-    px.stop()
-    px.set_dir_servo_angle(180)
-    time.sleep(2)
     px.set_dir_servo_angle(0)
 
 
@@ -150,84 +134,69 @@ def main(headless=False):
                 if marker1:
                     current_state = STATE_APPROACH_1
                 else:
-                    search_motion()
+                    pan_once()
 
             elif current_state == STATE_APPROACH_1:
                 if marker_is_close(marker1):
                     stop_car()
                     current_state = STATE_SEARCH_2
-                elif marker1:
-                    steer = steer_from_pixel(marker1["center"][0], frame.shape[1])
-                    drive_forward(steer)
                 else:
-                    current_state = STATE_SEARCH_1
+                    lock_on_marker(marker1, frame.shape[1])
 
             elif current_state == STATE_SEARCH_2:
                 if marker2:
                     current_state = STATE_APPROACH_2
                 else:
-                    search_motion()
+                    pan_once()
 
             elif current_state == STATE_APPROACH_2:
                 if marker_is_close(marker2):
                     stop_car()
                     current_state = STATE_SEARCH_3
-                elif marker2:
-                    steer = steer_from_pixel(marker2["center"][0], frame.shape[1])
-                    drive_forward(steer)
                 else:
-                    current_state = STATE_SEARCH_2
+                    lock_on_marker(marker2, frame.shape[1])
 
             elif current_state == STATE_SEARCH_3:
                 if marker3:
                     current_state = STATE_APPROACH_3
                 else:
-                    search_motion()
+                    pan_once()
 
             elif current_state == STATE_APPROACH_3:
                 if marker_is_close(marker3):
                     stop_car()
                     current_state = STATE_SEARCH_4
-                elif marker3:
-                    steer = steer_from_pixel(marker3["center"][0], frame.shape[1])
-                    drive_forward(steer)
                 else:
-                    current_state = STATE_SEARCH_3
+                    lock_on_marker(marker3, frame.shape[1])
 
             elif current_state == STATE_SEARCH_4:
                 if marker4:
                     current_state = STATE_APPROACH_4
                 else:
-                    search_motion()
+                    pan_once()
 
             elif current_state == STATE_APPROACH_4:
                 if marker_is_close(marker4):
                     stop_car()
                     current_state = STATE_SEARCH_5
-                elif marker4:
-                    steer = steer_from_pixel(marker4["center"][0], frame.shape[1])
-                    drive_forward(steer)
                 else:
-                    current_state = STATE_SEARCH_4
+                    lock_on_marker(marker4, frame.shape[1])
 
             elif current_state == STATE_SEARCH_5:
                 if marker5:
                     current_state = STATE_APPROACH_5
                 else:
-                    search_motion()
+                    pan_once()
 
             elif current_state == STATE_APPROACH_5:
                 if marker_is_close(marker5):
                     stop_car()
                     current_state = STATE_TURN_AROUND
-                elif marker5:
-                    steer = steer_from_pixel(marker5["center"][0], frame.shape[1])
-                    drive_forward(steer)
                 else:
-                    current_state = STATE_SEARCH_5
+                    lock_on_marker(marker5, frame.shape[1])
 
             elif current_state == STATE_TURN_AROUND:
-                turn_around()
+                stop_car()
                 reverse_mode = True
                 current_state = STATE_REVERSE_SEARCH_4
 
@@ -235,65 +204,53 @@ def main(headless=False):
                 if marker4:
                     current_state = STATE_REVERSE_APPROACH_4
                 else:
-                    search_motion()
+                    pan_once()
 
             elif current_state == STATE_REVERSE_APPROACH_4:
                 if marker_is_close(marker4):
                     stop_car()
                     current_state = STATE_REVERSE_SEARCH_3
-                elif marker4:
-                    steer = steer_from_pixel(marker4["center"][0], frame.shape[1])
-                    drive_forward(steer)
                 else:
-                    current_state = STATE_REVERSE_SEARCH_4
+                    lock_on_marker(marker4, frame.shape[1])
 
             elif current_state == STATE_REVERSE_SEARCH_3:
                 if marker3:
                     current_state = STATE_REVERSE_APPROACH_3
                 else:
-                    search_motion()
+                    pan_once()
 
             elif current_state == STATE_REVERSE_APPROACH_3:
                 if marker_is_close(marker3):
                     stop_car()
                     current_state = STATE_REVERSE_SEARCH_2
-                elif marker3:
-                    steer = steer_from_pixel(marker3["center"][0], frame.shape[1])
-                    drive_forward(steer)
                 else:
-                    current_state = STATE_REVERSE_SEARCH_3
+                    lock_on_marker(marker3, frame.shape[1])
 
             elif current_state == STATE_REVERSE_SEARCH_2:
                 if marker2:
                     current_state = STATE_REVERSE_APPROACH_2
                 else:
-                    search_motion()
+                    pan_once()
 
             elif current_state == STATE_REVERSE_APPROACH_2:
                 if marker_is_close(marker2):
                     stop_car()
                     current_state = STATE_REVERSE_SEARCH_1
-                elif marker2:
-                    steer = steer_from_pixel(marker2["center"][0], frame.shape[1])
-                    drive_forward(steer)
                 else:
-                    current_state = STATE_REVERSE_SEARCH_2
+                    lock_on_marker(marker2, frame.shape[1])
 
             elif current_state == STATE_REVERSE_SEARCH_1:
                 if marker1:
                     current_state = STATE_REVERSE_APPROACH_1
                 else:
-                    search_motion()
+                    pan_once()
 
             elif current_state == STATE_REVERSE_APPROACH_1:
                 if marker_is_close(marker1):
                     stop_car()
                     current_state = STATE_DONE
-                elif marker1:
-                    steer = steer_from_pixel(marker1["center"][0], frame.shape[1])
-                    drive_forward(steer)
                 else:
-                    current_state = STATE_REVERSE_SEARCH_1
+                    lock_on_marker(marker1, frame.shape[1])
 
             cv2.aruco.drawDetectedMarkers(frame, corners, ids)
             if not headless:
