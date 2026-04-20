@@ -27,7 +27,7 @@ dist_coeffs = np.zeros((5, 1))
 # Pan parameters
 pan_start = -45  # degrees
 pan_end = 45
-pan_step = 2
+pan_increment = 2
 pan_delay = 0.1  # seconds between steps
 marker_close_area = 1
 headless = False  # Default to showing display
@@ -92,7 +92,7 @@ def pan_step():
     """Take one step in pan sweep (non-blocking)."""
     global current_pan
     if current_pan > pan_start:
-        current_pan -= pan_step
+        current_pan -= pan_increment
         px.set_cam_pan_angle(current_pan)
     else:
         # Reset to start when pan complete
@@ -127,7 +127,7 @@ def stop_car():
 
 
 def main(headless=False):
-    global current_state, reverse_mode
+    global current_state, reverse_mode, current_pan
     try:
         while current_state != STATE_DONE:
             ret, frame = cap.read()
