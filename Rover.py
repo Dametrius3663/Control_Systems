@@ -30,6 +30,7 @@ pan_end = 45
 pan_step = 2
 pan_delay = 0.1  # seconds between steps
 marker_close_area = 1
+headless = False  # Default to showing display
 
 # States
 STATE_SEARCH_1 = 0
@@ -282,9 +283,13 @@ def main(headless=False):
 
             cv2.aruco.drawDetectedMarkers(frame, corners, ids)
             if not headless:
-                cv2.imshow('ArUco Detection', frame)
-                if cv2.waitKey(1) == ord('q'):
-                    break
+                try:
+                    cv2.imshow('ArUco Detection', frame)
+                    if cv2.waitKey(1) == ord('q'):
+                        break
+                except Exception as e:
+                    print(f"Display error: {e}, continuing in headless mode")
+                    headless = True
 
             print(
                 f"State: {current_state}, "
