@@ -7,8 +7,9 @@ px = Picarx()
 cap = cv2.VideoCapture(0)
 
 # Load face detector'
-face_cascade = cv2.CascadeClassifier('Control_Systems/haarcascade_frontalface_default.xml')
-
+face_cascade = cv2.CascadeClassifier(
+    '/usr/share/opencv4/haarcascades/haarcascade_frontalface_default.xml'
+)
 # Control parameters
 STEER_GAIN = 0.05
 MAX_STEER = 30
