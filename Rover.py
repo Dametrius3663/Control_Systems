@@ -119,7 +119,7 @@ def track_marker(marker, frame_width, current_pan=0):
 
         # Pan camera toward marker (keep head flexible to see marker)
         # Use small gain for smooth movement
-        new_pan = current_pan + pan_error * 0.01
+        new_pan = current_pan + pan_error * 0.001
         new_pan = float(np.clip(new_pan, -45, 45))
         px.set_cam_pan_angle(new_pan)
 
