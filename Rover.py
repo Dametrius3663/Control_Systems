@@ -27,8 +27,8 @@ dist_coeffs = np.zeros((5, 1))
 # Pan parameters
 pan_start = -45  # degrees
 pan_end = 45
-pan_increment = 2
-pan_delay = 0.1  # seconds between steps
+pan_increment = 1
+pan_delay = 0.5  # seconds between steps
 marker_close_area = 0.15  # 15% of frame = close enough
 headless = False  # Default to showing display
 
