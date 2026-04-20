@@ -88,8 +88,7 @@ while True:
         # -----------------------------
         face_error = TARGET_FACE_WIDTH - fw
 
-        speed = 30
-        speed =speed + face_error * SPEED_GAIN
+        speed = face_error * SPEED_GAIN
 
         # dead zone
         if abs(face_error) < 20:
