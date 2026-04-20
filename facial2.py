@@ -1,4 +1,16 @@
-# -------------------
+#import cv2
+import numpy as np
+from picarx import Picarx
+
+px = Picarx()
+
+cap = cv2.VideoCapture(0)
+
+# Load face detector'
+face_cascade = cv2.CascadeClassifier(
+    '/usr/share/opencv4/haarcascades/haarcascade_frontalface_default.xml'
+)
+#  -------------------
 # Gains (tune these)
 # -------------------
 PAN_GAIN = 0.08
