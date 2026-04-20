@@ -29,6 +29,7 @@ TARGET_FACE_WIDTH = 180
 # State
 pan_angle = 0
 tilt_angle = 0
+steer = 0
 
 def clamp(x, lo, hi):
     return max(lo, min(hi, x))
