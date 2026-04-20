@@ -121,8 +121,8 @@ def track_marker(marker, frame_width, current_pan=0):
         # Steer based on marker position in frame - not camera pan
         # Marker left of center = steer left, marker right = steer right
         steer = -pan_error * 0.15  # Negative because left (low x) should steer left (negative angle)
-        #steer = float(np.clip(steer, -45, 45))
-        px.set_dir_servo_angle(steer)
+        steer1 = float(np.clip(steer, -45, 45))
+        px.set_dir_servo_angle(steer1)
 
         return new_pan
     return current_pan
