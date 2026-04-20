@@ -1,11 +1,12 @@
+import argparse
 import cv2
 import numpy as np
-from picarx import Picarxcd
+from picarx import Picarx
 import threading
 import time
 
 # Hardware
-px = Picarxcd()
+px = Picarx()
 
 # Initialize camera
 cap = cv2.VideoCapture(0)
@@ -176,7 +177,7 @@ def turn_around():
     px.set_dir_servo_angle(0)
 
 
-def main():
+def main(headless=False):
     global current_state, reverse_mode
     try:
         avoidance_thread = threading.Thread(target=object_avoidance_loop, daemon=True)
@@ -362,9 +363,10 @@ def main():
                     current_state = STATE_REVERSE_SEARCH_1
 
             cv2.aruco.drawDetectedMarkers(frame, corners, ids)
-            cv2.imshow('ArUco Detection', frame)
-            if cv2.waitKey(1) == ord('q'):
-                break
+            if not headless:
+                cv2.imshow('ArUco Detection', frame)
+                if cv2.waitKey(1) == ord('q'):
+                    break
 
             print(
                 f"State: {current_state}, "
@@ -387,4 +389,7 @@ def main():
 
 
 if __name__ == "__main__":
-    main()
+    parser = argparse.ArgumentParser(description="Run Rover with optional headless mode.")
+    parser.add_argument("--headless", action="store_true", help="Disable GUI display and run without opening windows.")
+    args = parser.parse_args()
+    main(headless=args.headless)
