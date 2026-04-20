@@ -20,7 +20,7 @@ parameters = cv2.aruco.DetectorParameters()
 detector = cv2.aruco.ArucoDetector(aruco_dict, parameters)
 
 # Camera parameters for pose estimation (approximate)
-marker_length = 0.05  # 5cm markers
+marker_length = 0.30  # 12in in cm markers
 camera_matrix = np.array([[640, 0, 320], [0, 640, 240], [0, 0, 1]], dtype=np.float32)
 dist_coeffs = np.zeros((5, 1))
 
@@ -82,16 +82,16 @@ def marker_is_close(marker, threshold=marker_close_area):
 
 def steer_from_pixel(center_x, frame_width, k_p=0.15, max_angle=45):
     error = center_x - frame_width / 2
-    steer_angle = -error * k_p
+    steer_angle = error * k_p
     return float(np.clip(steer_angle, -max_angle, max_angle))
 
 
 def pan_once():
-    """Pan the camera/servo slowly from left to right once."""
-    for angle in range(pan_start, pan_end + 1, pan_step):
-        px.set_dir_servo_angle(angle)
+    """Pan the camera/servo slowly from right to left once."""
+    for angle in range(pan_end, pan_start - 1, -pan_step):
+        px.set_cam_pan_angle(angle)
         time.sleep(pan_delay)
-    px.set_dir_servo_angle(0)
+    px.set_cam_pan_angle(0)
 
 
 def lock_on_marker(marker, frame_width):
@@ -103,7 +103,7 @@ def lock_on_marker(marker, frame_width):
 
 def stop_car():
     px.stop()
-    px.set_dir_servo_angle(0)
+    #px.set_dir_servo_angle(0)
 
 
 def main(headless=False):
