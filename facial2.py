@@ -15,13 +15,13 @@ face_cascade = cv2.CascadeClassifier(
 # -------------------
 PAN_GAIN = 0.01
 TILT_GAIN = 0.01
-STEER_GAIN = 0.1
+STEER_GAIN = 0.01
 SPEED_GAIN = 0.01
 
 # Limits
 PAN_MAX = 45
 TILT_MAX = 30
-STEER_MAX = 30
+STEER_MAX = 45
 
 # Target face size (distance control)
 TARGET_FACE_WIDTH = 180
