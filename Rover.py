@@ -29,7 +29,7 @@ pan_start = -45  # degrees
 pan_end = 45
 pan_increment = 2
 pan_delay = 0.1  # seconds between steps
-marker_close_area = 1
+marker_close_area = 0.15  # 15% of frame = close enough
 headless = False  # Default to showing display
 
 # States
@@ -115,21 +115,23 @@ def track_marker(marker, frame_width, current_pan=0):
     if marker:
         marker_x = marker["center"][0]
         frame_center = frame_width / 2
+        pan_error = marker_x - frame_center
 
         # Pan camera toward marker (keep head flexible to see marker)
-        pan_error = marker_x - frame_center
-        new_pan = current_pan + pan_error * 0.03  # Adjust pan sensitivity as needed
+        new_pan = current_pan + pan_error * 0.3
         new_pan = float(np.clip(new_pan, -45, 45))
         px.set_cam_pan_angle(new_pan)
 
-        # Steer based on marker position in frame - smooth interpolation
+        # Steer based on MARKER position in frame (not camera pan)
         # Marker left of center = steer left, marker right = steer right
-        steer = -new_pan * 0.03  # Adjust steering sensitivity as needed
+        steer = -pan_error * 0.15
         steer = float(np.clip(steer, -30, 30))
         px.set_dir_servo_angle(steer)
 
         # Drive forward while tracking
         px.forward(speed)
+
+        print(f"Marker x: {marker_x:.0f}, Error: {pan_error:.0f}, Pan: {new_pan:.1f}, Steer: {steer:.1f}")
 
         return new_pan
     return current_pan
