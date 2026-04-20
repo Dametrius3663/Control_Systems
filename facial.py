@@ -12,7 +12,7 @@ face_cascade = cv2.CascadeClassifier(
 )
 
 # Control parameters
-STEER_GAIN = 0.2
+STEER_GAIN = 0.05
 MAX_STEER = 30
 
 TARGET_FACE_SIZE = 200  # desired width of face (pixels)
