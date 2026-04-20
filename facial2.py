@@ -16,7 +16,7 @@ face_cascade = cv2.CascadeClassifier(
 PAN_GAIN = 0.01
 TILT_GAIN = 0.005
 STEER_GAIN = 0.01
-SPEED_GAIN = 0.05
+SPEED_GAIN = 0.001
 
 # Limits
 PAN_MAX = 45
@@ -88,7 +88,7 @@ while True:
         # -----------------------------
         face_error = TARGET_FACE_WIDTH - fw
 
-        speed = 30
+        speed = speed + face_error * SPEED_GAIN
 
         # dead zone
         if abs(face_error) < 20:
