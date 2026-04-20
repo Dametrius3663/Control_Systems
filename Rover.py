@@ -118,13 +118,13 @@ def track_marker(marker, frame_width, current_pan=0):
 
         # Pan camera toward marker (keep head flexible to see marker)
         pan_error = marker_x - frame_center
-        new_pan = current_pan + pan_error * 0.01
+        new_pan = current_pan + pan_error * 0.03  # Adjust pan sensitivity as needed
         new_pan = float(np.clip(new_pan, -45, 45))
         px.set_cam_pan_angle(new_pan)
 
         # Steer based on marker position in frame - smooth interpolation
         # Marker left of center = steer left, marker right = steer right
-        steer = -pan_error * 0.08
+        steer = -new_pan * 0.03  # Adjust steering sensitivity as needed
         steer = float(np.clip(steer, -30, 30))
         px.set_dir_servo_angle(steer)
 
