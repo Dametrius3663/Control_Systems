@@ -27,7 +27,6 @@ dist_coeffs = np.zeros((5, 1))
 # Movement parameters
 speed = 30
 turn_angle = 30
-obstacle_threshold = 30  # cm
 marker_close_area = 0.02  # marker covers this fraction of frame area when close enough
 
 # States
@@ -54,60 +53,6 @@ STATE_DONE = 19
 
 current_state = STATE_SEARCH_1
 reverse_mode = False
-
-# Obstacle avoidance background monitor
-obstacle_data = {
-    "distance_cm": None,
-    "detected": False,
-    "last_check": 0.0,
-}
-obstacle_lock = threading.Lock()
-avoidance_shutdown = threading.Event()
-
-
-def get_front_distance():
-    if hasattr(px, "ultrasonic"):
-        try:
-            return float(px.ultrasonic.read())
-        except Exception:
-            pass
-    if hasattr(px, "get_distance_at"):
-        try:
-            return float(px.get_distance_at(0))
-        except Exception:
-            pass
-    return None
-
-
-def object_avoidance_loop():
-    while not avoidance_shutdown.is_set():
-        dist = get_front_distance()
-        with obstacle_lock:
-            if dist is not None:
-                obstacle_data["distance_cm"] = dist
-                obstacle_data["detected"] = dist < obstacle_threshold
-                obstacle_data["last_check"] = time.time()
-            else:
-                obstacle_data["detected"] = False
-        time.sleep(0.1)
-
-
-def perform_obstacle_avoidance():
-    stop_car()
-    px.set_dir_servo_angle(0)
-    # Back up briefly before turning
-    px.backward(speed)
-    time.sleep(0.5)
-    px.stop()
-
-    # Turn away from the obstacle
-    turn_dir = -turn_angle if reverse_mode else turn_angle
-    px.set_dir_servo_angle(turn_dir)
-    px.forward(speed)
-    time.sleep(0.8)
-    px.stop()
-    px.set_dir_servo_angle(0)
-
 
 def get_marker_data(corners, ids, tvecs, frame_area):
     data = {}
@@ -180,9 +125,6 @@ def turn_around():
 def main(headless=False):
     global current_state, reverse_mode
     try:
-        avoidance_thread = threading.Thread(target=object_avoidance_loop, daemon=True)
-        avoidance_thread.start()
-
         while current_state != STATE_DONE:
             ret, frame = cap.read()
             if not ret:
@@ -197,15 +139,6 @@ def main(headless=False):
                     corners, marker_length, camera_matrix, dist_coeffs)
                 frame_area = frame.shape[0] * frame.shape[1]
                 marker_data = get_marker_data(corners, ids, tvecs, frame_area)
-
-            with obstacle_lock:
-                obstacle_detected = obstacle_data["detected"]
-                obstacle_distance = obstacle_data["distance_cm"]
-
-            if obstacle_detected:
-                print(f"Obstacle detected at {obstacle_distance:.1f} cm, avoiding")
-                perform_obstacle_avoidance()
-                continue
 
             marker1 = marker_data.get(1)
             marker2 = marker_data.get(2)
@@ -381,7 +314,6 @@ def main(headless=False):
     except KeyboardInterrupt:
         print("Interrupted")
     finally:
-        avoidance_shutdown.set()
         stop_car()
         cap.release()
         cv2.destroyAllWindows()
