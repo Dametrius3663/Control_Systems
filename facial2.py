@@ -66,8 +66,8 @@ while True:
         if abs(err_y) < 15:
             err_y = 0
 
-        pan_angle -= err_x * PAN_GAIN
-        tilt_angle += err_y * TILT_GAIN
+        pan_angle += err_x * PAN_GAIN
+        tilt_angle -= err_y * TILT_GAIN
 
         pan_angle = clamp(pan_angle, -PAN_MAX, PAN_MAX)
         tilt_angle = clamp(tilt_angle, -TILT_MAX, TILT_MAX)
@@ -78,7 +78,7 @@ while True:
         # -----------------------------
         # 2. STEERING (rotate car)
         # -----------------------------
-        steer = -err_x * STEER_GAIN
+        steer = err_x * STEER_GAIN
         steer = clamp(steer, -STEER_MAX, STEER_MAX)
         px.set_dir_servo_angle(steer)
 
@@ -87,7 +87,7 @@ while True:
         # -----------------------------
         face_error = TARGET_FACE_WIDTH - fw
 
-        speed = face_error * SPEED_GAIN
+        speed = 30
 
         # dead zone
         if abs(face_error) < 20:
