@@ -13,9 +13,9 @@ face_cascade = cv2.CascadeClassifier(
 #  -------------------
 # Gains (tune these)
 # -------------------
-PAN_GAIN = 0.005
+PAN_GAIN = 0.01
 TILT_GAIN = 0.005
-STEER_GAIN = 0.005
+STEER_GAIN = 0.01
 SPEED_GAIN = 0.05
 
 # Limits
@@ -78,7 +78,7 @@ while True:
         # -----------------------------
         # 2. STEERING (rotate car)
         # -----------------------------
-        steer = err_x * STEER_GAIN
+        steer += err_x * STEER_GAIN
         steer = clamp(steer, -STEER_MAX, STEER_MAX)
         px.set_dir_servo_angle(steer)
 
