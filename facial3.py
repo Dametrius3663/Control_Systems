@@ -93,7 +93,7 @@ while True:
             speed = face_error * SPEED_GAIN
 
         speed = clamp(speed, -30, 40)
-        px.forward(speed)
+        px.forward(10)
 
         # Debug only (no display)
         print(
