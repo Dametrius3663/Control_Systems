@@ -15,10 +15,10 @@ face_cascade = cv2.CascadeClassifier(
 # -------------------
 # Gains (tune these)
 # -------------------
-PAN_GAIN = 0.05
-TILT_GAIN = 0.05
-STEER_GAIN = 0.01
-SPEED_GAIN = 0.01
+PAN_GAIN = 0.09
+TILT_GAIN = 0.1
+STEER_GAIN = 0.09
+SPEED_GAIN = 0.1
 
 # Limits
 PAN_MAX = 45
