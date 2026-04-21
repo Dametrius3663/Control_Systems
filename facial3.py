@@ -60,7 +60,7 @@ while True:
         err_x = fx - cx
         err_y = fy - cy
 
-        if abs(err_x) < 15:
+        if abs(err_x) < 5:
             err_x = 0
         if abs(err_y) < 15:
             err_y = 0
@@ -80,7 +80,7 @@ while True:
         # 2. STEERING
         # -----------------------------
         steer = clamp(err_x * STEER_GAIN, -STEER_MAX, STEER_MAX)
-        px.set_dir_servo_angle(steer)
+        px.set_dir_servo_angle(pan_angle)
 
         # -----------------------------
         # 3. SPEED
