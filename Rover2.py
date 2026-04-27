@@ -31,7 +31,20 @@ marker_length = marker_size / 100  # cm → meters
 # -----------------------
 # Control params
 # -----------------------
-speed = 10
+speed = 30
+current_speed = 0
+max_speed = speed
+accel_step = 2   # how fast it ramps up/down
+def update_speed(target_speed):
+    global current_speed
+
+    if current_speed < target_speed:
+        current_speed += accel_step
+    elif current_speed > target_speed:
+        current_speed -= accel_step
+
+    current_speed = max(0, min(current_speed, max_speed))
+    return current_speed
 
 pan_start = -45
 pan_end = 45
@@ -94,9 +107,9 @@ def track_marker_pnp(rvec, tvec, reverse=False):
     px.set_dir_servo_angle(steer)
 
     if reverse:
-        px.backward(speed)
+        px.backward(update_speed(speed))
     else:
-        px.forward(speed)
+        px.forward(update_speed(speed))
     if z < 0.5:
         print("Close to marker → stopping")
         stop_car()
@@ -185,7 +198,7 @@ def main(headless=False):
                         print("Marker 10 → CLOSE → TURN LEFT")
                         stop_car()
                         px.set_dir_servo_angle(-25)
-                        px.forward(speed)
+                        px.forward(update_speed(speed))
                         time.sleep(1.0)
                         stop_car()
                     elif active_target == 8:
