@@ -41,9 +41,6 @@ pan_dir = 1
 tracking = False
 reverse_mode = False
 
-# Marker IDs
-markers = [8, 9, 10, 11, 12, 13]  # Example marker IDs for pointer and reference
-
 # -----------------------
 # STATES
 # -----------------------
