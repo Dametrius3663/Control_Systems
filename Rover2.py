@@ -88,7 +88,7 @@ def track_marker_pnp(rvec, tvec, reverse=False):
     if reverse:
         steer *= -1
 
-    steer = -float(np.clip(steer, -30, 30))
+    steer = float(np.clip(steer, -30, 30))
 
     px.set_dir_servo_angle(steer)
 
