@@ -41,6 +41,9 @@ pan_dir = 1
 tracking = False
 reverse_mode = False
 
+# Marker IDs
+markers = [8, 9, 10, 11, 12, 13]  # Example marker IDs for pointer and reference
+
 # -----------------------
 # STATES
 # -----------------------
@@ -114,6 +117,8 @@ def main(headless=False):
             if not ret:
                 break
             corners, ids, _ = detector.detectMarkers(frame)
+
+            marker_map = {int(id_val): i for i, id_val in enumerate(ids.flatten())}
             # -----------------------
             # SEARCH MODE
             # -----------------------
@@ -129,20 +134,69 @@ def main(headless=False):
             # -----------------------
             elif state == STATE_TRACK:
                 if ids is None:
-                    print("Lost marker → back to SEARCH")
                     state = STATE_SEARCH
-                    tracking = False
                     stop_car()
                     continue
+
                 rvecs, tvecs, _ = cv2.aruco.estimatePoseSingleMarkers(
                     corners, marker_length, camera_matrix, dist_coeffs
                 )
-                result = track_marker_pnp(rvecs[0], tvecs[0], reverse_mode)
-                if result == "close":
-                    state = STATE_SEARCH
-                    tracking = False
-                    stop_car()
+
+                marker_map = {int(id_val): i for i, id_val in enumerate(ids.flatten())}
+
+                # ----------------------------
+                # 1. SPECIAL ACTIONS FIRST
+                # ----------------------------
+
+                if 8 in marker_map:
+                    i = marker_map[8]
+                    print("Marker 8 → ACTION: track")
+                    track_marker_pnp(rvecs[i], tvecs[i], reverse_mode)
+                    result = track_marker_pnp(rvecs[8], tvecs[8], reverse_mode)
+                    if result == "close":
+                        state = STATE_SEARCH
+                        tracking = False
+                        stop_car()
+                        continue
                     continue
+
+                if 9 in marker_map:
+                    i = marker_map[9]
+                    print("Marker 9 → APPROACHING")
+                    result = track_marker_pnp(rvecs[i], tvecs[i], reverse_mode)
+                    if result == "close":
+                        print("Marker 9 → CLOSE → TURN LEFT")
+                        stop_car()
+                        px.set_dir_servo_angle(-25)
+                        px.forward(speed)
+                        # optional small timed turn
+                        cv2.waitKey(1000)  # turn for 1 second
+                        stop_car()
+                        continue
+                    continue
+
+                if 10 in marker_map:
+                    i = marker_map[10]
+                    print("Marker 10 → ACTION: REVERSE")
+                    px.backward(speed)
+                    continue
+
+                # ----------------------------
+                # 2. DEFAULT BEHAVIOR (TRACKING)
+                # ----------------------------
+
+                # pick one target marker (example: highest priority)
+                target_id = 11
+
+                if target_id in marker_map:
+                    i = marker_map[target_id]
+                    track_marker_pnp(rvecs[i], tvecs[i], reverse_mode)
+                #result = track_marker_pnp(rvecs[0], tvecs[0], reverse_mode)
+                #if result == "close":
+                #    state = STATE_SEARCH
+                 #   tracking = False
+                #    stop_car()
+                #    continue
             # -----------------------
             # DISPLAY
             # -----------------------
