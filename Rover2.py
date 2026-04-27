@@ -149,7 +149,7 @@ def main(headless=False):
                     i = marker_map[8]
                     print("Marker 8 → ACTION: track")
                     track_marker_pnp(rvecs[i], tvecs[i], reverse_mode)
-                    result = track_marker_pnp(rvecs[8], tvecs[8], reverse_mode)
+                    result = track_marker_pnp(rvecs[i], tvecs[i], reverse_mode)
                     if result == "close":
                         state = STATE_SEARCH
                         tracking = False
