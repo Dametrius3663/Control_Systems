@@ -96,7 +96,7 @@ def track_marker_pnp(rvec, tvec, reverse=False):
         px.backward(speed)
     else:
         px.forward(speed)
-    if (z) < 500:
+    if (z) < 0.5:
         print("Close to marker → stopping")
         stop_car()
         state = STATE_SEARCH
