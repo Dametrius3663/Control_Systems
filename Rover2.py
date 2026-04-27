@@ -112,20 +112,22 @@ def track_marker_pnp(rvec, tvec, reverse=False):
     print(f"[{'REV' if reverse else 'FWD'}] x:{x:.2f} z:{z:.2f} steer:{steer:.2f}")
 
 def drive_to_marker_once(rvec, tvec):
-    x = tvec[0][0][0]
-    z = tvec[0][0][2]
 
-    # steering angle from geometry
+    tvec = np.array(tvec).reshape(-1)
+
+    x = tvec[0]
+    y = tvec[1]
+    z = tvec[2]
+
     steer = np.degrees(np.arctan2(x, z))
     steer = float(np.clip(steer * 1.5, -30, 30))
 
     px.set_dir_servo_angle(steer)
 
-    # simple distance-based drive time
-    target_distance = z  # meters
+    target_distance = z
     drive_speed = 30
 
-    travel_time = target_distance / 0.25  # assume ~0.25 m/s
+    travel_time = target_distance / 0.25
 
     px.forward(drive_speed)
     time.sleep(travel_time)
