@@ -65,24 +65,28 @@ current_state = STATE_SEARCH_1
 # -----------------------
 def track_marker_pnp(rvec, tvec, reverse=False):
     """
-    Use SolvePnP output for stable steering.
+    Robust SolvePnP tracking (handles all OpenCV output shapes)
     """
 
-    x = tvec[0][0][0]
-    z = tvec[0][0][2]
+    # --- flatten safely ---
+    tvec = np.array(tvec).reshape(3,)
+    rvec = np.array(rvec).reshape(3,)
 
-    # prevent divide-by-zero
-    if z < 1e-6:
+    x = float(tvec[0])
+    z = float(tvec[2])
+
+    # safety check
+    if abs(z) < 1e-6:
         return
 
-    # yaw angle (radians)
+    # yaw angle from camera frame
     yaw = np.arctan2(x, z)
 
-    # convert to steering command
-    steer = np.degrees(yaw) * -1.2 # gain
+    # steering gain
+    steer = np.degrees(yaw) * 2.0
 
     if reverse:
-        steer = -steer
+        steer *= -1
 
     steer = float(np.clip(steer, -30, 30))
 
@@ -94,11 +98,6 @@ def track_marker_pnp(rvec, tvec, reverse=False):
         px.forward(speed)
 
     print(f"[{'REV' if reverse else 'FWD'}] x:{x:.2f} z:{z:.2f} yaw:{np.degrees(yaw):.2f} steer:{steer:.2f}")
-
-
-def stop_car():
-    px.stop()
-    px.set_dir_servo_angle(0)
 
 
 # -----------------------
