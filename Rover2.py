@@ -55,16 +55,12 @@ pan_dir = 1
 tracking = False
 reverse_mode = False
 
-active_target = None
-approach_done = False
-
 # -----------------------
 # STATES
 # -----------------------
 STATE_SEARCH = 0
 STATE_TRACK = 1
 STATE_DONE = 2
-STATE_APPREOCH_ONCE = 20
 
 state = STATE_SEARCH
 
@@ -100,7 +96,9 @@ def track_marker_pnp(rvec, tvec, reverse=False):
     if reverse:
         steer *= -1
     steer = float(np.clip(steer, -30, 30))
+
     px.set_dir_servo_angle(steer)
+
     if reverse:
         px.backward(update_speed(speed))
     else:
@@ -109,29 +107,8 @@ def track_marker_pnp(rvec, tvec, reverse=False):
         print("Close to marker → stopping")
         stop_car()
         return "close"
+
     print(f"[{'REV' if reverse else 'FWD'}] x:{x:.2f} z:{z:.2f} steer:{steer:.2f}")
-
-def drive_to_marker_once(rvec, tvec):
-
-    tvec = np.array(tvec).reshape(-1)
-
-    x = tvec[0]
-    y = tvec[1]
-    z = tvec[2]
-
-    steer = np.degrees(np.arctan2(x, z))
-    steer = float(np.clip(steer * 1.5, -30, 30))
-
-    px.set_dir_servo_angle(steer)
-
-    target_distance = z
-    drive_speed = 30
-
-    travel_time = target_distance / 0.25
-
-    px.forward(drive_speed)
-    time.sleep(travel_time)
-    px.stop()
 
 # -----------------------
 # MAIN LOOP
@@ -141,35 +118,45 @@ def main(headless=False):
 
     try:
         while state != STATE_DONE:
+
             ret, frame = cap.read()
             if not ret:
                 break
+
             corners, ids, _ = detector.detectMarkers(frame)
+
             # -----------------------
             # SEARCH MODE
             # -----------------------
             if state == STATE_SEARCH:
+
                 pan_sweep()
                 stop_car()
+
                 if ids is not None:
                     print("Marker found → switching to TRACK")
                     state = STATE_TRACK
                     tracking = True
                     active_target = None  # reset latch when entering TRACK
+
             # -----------------------
             # TRACK MODE
             # -----------------------
             elif state == STATE_TRACK:
+
                 # SAFETY CHECK
                 if ids is None or len(ids) == 0:
                     state = STATE_SEARCH
                     stop_car()
                     active_target = None
                     continue
+
                 rvecs, tvecs, _ = cv2.aruco.estimatePoseSingleMarkers(
                     corners, marker_length, camera_matrix, dist_coeffs
                 )
+
                 marker_map = {int(id_val): i for i, id_val in enumerate(ids.flatten())}
+
                 # ----------------------------
                 # LATCH TARGET (STABLE PRIORITY)
                 # ----------------------------
@@ -191,10 +178,6 @@ def main(headless=False):
                 # ----------------------------
                 # EXECUTE BEHAVIOR
                 # ----------------------------
-                drive_to_marker_once(
-                    rvecs[i],
-                    tvecs[i]
-                )
                 result = track_marker_pnp(
                     rvecs[i],
                     tvecs[i],
