@@ -62,16 +62,12 @@ def stop_car():
 # -----------------------
 def pan_sweep():
     global current_pan, pan_dir
-
     current_pan += pan_dir * pan_increment
-
     if current_pan >= pan_end:
         pan_dir = -1
     elif current_pan <= pan_start:
         pan_dir = 1
-
     px.set_cam_pan_angle(current_pan)
-
 # -----------------------
 # SolvePnP tracking
 # -----------------------
@@ -87,10 +83,10 @@ def track_marker_pnp(rvec, tvec, reverse=False):
 
     yaw = np.arctan2(x, z)
 
-    steer = np.degrees(yaw) * 2.0
+    steer = -np.degrees(yaw) * 1.002
 
     if reverse:
-        steer *= -1
+        steer *= 1
 
     steer = float(np.clip(steer, -30, 30))
 
@@ -100,9 +96,12 @@ def track_marker_pnp(rvec, tvec, reverse=False):
         px.backward(speed)
     else:
         px.forward(speed)
+    if (z) < 500:
+        print("Close to marker → stopping")
+        stop_car()
+        state = STATE_SEARCH
 
     print(f"[{'REV' if reverse else 'FWD'}] x:{x:.2f} z:{z:.2f} steer:{steer:.2f}")
-
 
 # -----------------------
 # MAIN LOOP
