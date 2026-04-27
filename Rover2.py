@@ -4,6 +4,7 @@ import cv2.aruco as aruco
 import numpy as np
 from picarx import Picarx
 from Vision.app.core.config import Config
+import time
 
 # -----------------------
 # Hardware
@@ -115,7 +116,6 @@ def main(headless=False):
                 break
             corners, ids, _ = detector.detectMarkers(frame)
 
-            marker_map = {int(id_val): i for i, id_val in enumerate(ids.flatten())}
             # -----------------------
             # SEARCH MODE
             # -----------------------
@@ -130,7 +130,8 @@ def main(headless=False):
             # TRACK MODE
             # -----------------------
             elif state == STATE_TRACK:
-                if ids is None:
+                # SAFETY CHECK
+                if ids is None or len(ids) == 0:
                     state = STATE_SEARCH
                     stop_car()
                     continue
@@ -138,9 +139,8 @@ def main(headless=False):
                 rvecs, tvecs, _ = cv2.aruco.estimatePoseSingleMarkers(
                     corners, marker_length, camera_matrix, dist_coeffs
                 )
-
+                #MRKER MAP
                 marker_map = {int(id_val): i for i, id_val in enumerate(ids.flatten())}
-
                 # ----------------------------
                 # 1. SPECIAL ACTIONS FIRST
                 # ----------------------------
@@ -148,7 +148,6 @@ def main(headless=False):
                 if 8 in marker_map:
                     i = marker_map[8]
                     print("Marker 8 → ACTION: track")
-                    track_marker_pnp(rvecs[i], tvecs[i], reverse_mode)
                     result = track_marker_pnp(rvecs[i], tvecs[i], reverse_mode)
                     if result == "close":
                         state = STATE_SEARCH
@@ -167,7 +166,7 @@ def main(headless=False):
                         px.set_dir_servo_angle(-25)
                         px.forward(speed)
                         # optional small timed turn
-                        cv2.waitKey(1000)  # turn for 1 second
+                        time.sleep(1.0)  # turn for 1 second
                         stop_car()
                         continue
                     continue
@@ -188,12 +187,6 @@ def main(headless=False):
                 if target_id in marker_map:
                     i = marker_map[target_id]
                     track_marker_pnp(rvecs[i], tvecs[i], reverse_mode)
-                #result = track_marker_pnp(rvecs[0], tvecs[0], reverse_mode)
-                #if result == "close":
-                #    state = STATE_SEARCH
-                 #   tracking = False
-                #    stop_car()
-                #    continue
             # -----------------------
             # DISPLAY
             # -----------------------
