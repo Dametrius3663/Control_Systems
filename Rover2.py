@@ -31,7 +31,7 @@ marker_length = marker_size / 100  # cm → meters
 # -----------------------
 # Control params
 # -----------------------
-speed = 30
+speed = 10
 
 pan_start = -45
 pan_end = 45
@@ -177,30 +177,23 @@ def main(headless=False):
                     tvecs[i],
                     reverse_mode
                 )
-
                 # ----------------------------
                 # COMPLETION LOGIC
                 # ----------------------------
                 if result == "close":
-
                     if active_target == 10:
                         print("Marker 10 → CLOSE → TURN LEFT")
                         stop_car()
-
                         px.set_dir_servo_angle(-25)
                         px.forward(speed)
                         time.sleep(1.0)
-
                         stop_car()
-
                     elif active_target == 8:
                         print("Marker 8 → DONE")
                         stop_car()
-
                     elif active_target == 11:
                         print("Marker 11 → REVERSE DONE")
                         stop_car()
-
                     # reset system after any action
                     state = STATE_SEARCH
                     tracking = False
