@@ -1,28 +1,34 @@
 import argparse
 import cv2
+import cv2.aruco as aruco
 import numpy as np
 from picarx import Picarx
+from Vision.app.core.config import Config
 import threading
 import time
 
 # Hardware
 px = Picarx()
+config = Config.get_instance() 
+# --- ArUco Setup ---
+aruco_dict = config.aruco_dict
+aruco_params = config.aruco_params
 
+cam_matrix = config.cam_matrix
+dist_coeffs = config.dist_coeffs
+marker_size = config.marker_size
 # Initialize camera
 cap = cv2.VideoCapture(0)
 if not cap.isOpened():
     print("Cannot open camera")
     exit()
 
-# ArUco setup
-aruco_dict = cv2.aruco.getPredefinedDictionary(cv2.aruco.DICT_4X4_50)
-parameters = cv2.aruco.DetectorParameters()
-detector = cv2.aruco.ArucoDetector(aruco_dict, parameters)
+detector = aruco.ArucoDetector(aruco_dict, aruco_params)
 
 # Camera parameters for pose estimation (approximate)
-marker_length = 0.30  # 12in in cm markers
-camera_matrix = np.array([[640, 0, 320], [0, 640, 240], [0, 0, 1]], dtype=np.float32)
-dist_coeffs = np.zeros((5, 1))
+marker_length = marker_size / 100  # Convert cm to meters
+camera_matrix = cam_matrix
+dist_coeffs = dist_coeffs
 
 # Pan parameters
 pan_start = -45  # degrees
@@ -156,11 +162,11 @@ def main(headless=False):
                 frame_area = frame.shape[0] * frame.shape[1]
                 marker_data = get_marker_data(corners, ids, tvecs, frame_area)
 
-            marker1 = marker_data.get(1)
-            marker2 = marker_data.get(2)
-            marker3 = marker_data.get(3)
-            marker4 = marker_data.get(4)
-            marker5 = marker_data.get(5)
+            marker1 = marker_data.get(8)
+            marker2 = marker_data.get(9)
+            marker3 = marker_data.get(10)
+            marker4 = marker_data.get(11)
+            marker5 = marker_data.get(12)
 
             if current_state == STATE_SEARCH_1:
                 if marker1:
