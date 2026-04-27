@@ -133,7 +133,6 @@ def main(headless=False):
                     tracking = True
                     active_target = None  # reset latch when entering TRACK
 
-
             # -----------------------
             # TRACK MODE
             # -----------------------
@@ -156,7 +155,6 @@ def main(headless=False):
                 # LATCH TARGET (STABLE PRIORITY)
                 # ----------------------------
                 if active_target is None:
-
                     if 10 in marker_map:
                         active_target = 10
                     elif 8 in marker_map:
@@ -209,7 +207,6 @@ def main(headless=False):
                     active_target = None
                     stop_car()
                     continue
-
 
             # -----------------------
             # DISPLAY
