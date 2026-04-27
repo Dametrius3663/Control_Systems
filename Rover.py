@@ -4,8 +4,6 @@ import cv2.aruco as aruco
 import numpy as np
 from picarx import Picarx
 from Vision.app.core.config import Config
-import threading
-import time
 
 # Hardware
 px = Picarx()
@@ -38,6 +36,8 @@ pan_delay = 0.5  # seconds between steps
 marker_close_area = 0.15  # 15% of frame = close enough
 headless = False  # Default to showing display
 
+reverse_mode = False
+
 # States
 STATE_SEARCH_1 = 0
 STATE_APPROACH_1 = 1
@@ -61,7 +61,6 @@ STATE_REVERSE_APPROACH_1 = 18
 STATE_DONE = 19
 
 current_state = STATE_SEARCH_1
-reverse_mode = False
 current_pan = 0  # Track current pan position for non-blocking pan
 speed = 30
 
@@ -88,13 +87,6 @@ def get_marker_data(corners, ids, tvecs, frame_area):
 def marker_is_close(marker, threshold=marker_close_area):
     return marker is not None and marker.get("area_ratio", 0.0) >= threshold
 
-
-def steer_from_pixel(center_x, frame_width, k_p=0.15, max_angle=45):
-    error = center_x - frame_width / 2
-    steer_angle = error * k_p
-    return float(np.clip(steer_angle, -max_angle, max_angle))
-
-
 def pan_step():
     """Take one step in pan sweep (non-blocking)."""
     global current_pan
@@ -109,40 +101,48 @@ def pan_step():
 def reset_pan():
     """Reset pan to starting position."""
     global current_pan
-    current_pan = pan_end
+    current_pan = 0
     px.set_cam_pan_angle(0)
 
+def track_marker(marker, frame_width, current_pan=0, reverse=False):
+    """Track marker using camera POV for direction."""
 
-def track_marker(marker, frame_width, current_pan=0):
-    """Pan camera to track marker, then steer car to align with marker."""
     if marker:
         marker_x = marker["center"][0]
         frame_center = frame_width / 2
-        pan_error = marker_x - frame_center
+        error = marker_x - frame_center
 
-        # Pan camera toward marker (keep head flexible to see marker)
-        # Use small gain for smooth movement
-        new_pan = current_pan + pan_error * 0.001
-        new_pan = float(np.clip(new_pan, -45, 45))
+        # --- PAN CAMERA (for visibility only) ---
+        new_pan = np.clip(error * 0.02, -45, 45)
+        new_pan = float(np.clip(new_pan, -45, 45)) 
         px.set_cam_pan_angle(new_pan)
 
-        # Steer based on MARKER position in frame (not camera pan)
-        # Marker left of center = steer left, marker right = steer right
-        steer = -pan_error * 0.05
+        # --- STEERING BASED ON CAMERA POV ---
+        steer = error * 0.03
+
+        # Flip steering if reversing
+        if reverse:
+            steer = -steer
+
         steer = float(np.clip(steer, -30, 30))
         px.set_dir_servo_angle(steer)
-        px.forward(speed)
 
-        print(f"Marker x: {marker_x:.0f}, Error: {pan_error:.0f}, Pan: {new_pan:.1f}, Steer: {steer:.1f}")
+        # --- MOTION ---
+        if reverse:
+            px.backward(speed)
+        else:
+            px.forward(speed)
+
+        print(f"[{'REV' if reverse else 'FWD'}] x:{marker_x:.0f} err:{error:.0f} pan:{new_pan:.1f} steer:{steer:.1f}")
 
         return new_pan
+
     return current_pan
 
 
 def stop_car():
     px.stop()
     px.set_dir_servo_angle(0)
-
 
 def main(headless=False):
     global current_state, reverse_mode, current_pan
@@ -180,7 +180,7 @@ def main(headless=False):
                     reset_pan()
                     current_state = STATE_SEARCH_2
                 else:
-                    current_pan = track_marker(marker1, frame.shape[1], current_pan)
+                    current_pan = track_marker(marker1, frame.shape[1], current_pan, reverse_mode)
 
             elif current_state == STATE_SEARCH_2:
                 if marker2:
@@ -194,7 +194,7 @@ def main(headless=False):
                     reset_pan()
                     current_state = STATE_SEARCH_3
                 else:
-                    current_pan = track_marker(marker2, frame.shape[1], current_pan)
+                    current_pan = track_marker(marker2, frame.shape[1], current_pan, reverse_mode)
 
             elif current_state == STATE_SEARCH_3:
                 if marker3:
@@ -208,7 +208,7 @@ def main(headless=False):
                     reset_pan()
                     current_state = STATE_SEARCH_4
                 else:
-                    current_pan = track_marker(marker3, frame.shape[1], current_pan)
+                    current_pan = track_marker(marker3, frame.shape[1], current_pan, reverse_mode)
 
             elif current_state == STATE_SEARCH_4:
                 if marker4:
@@ -222,7 +222,7 @@ def main(headless=False):
                     reset_pan()
                     current_state = STATE_SEARCH_5
                 else:
-                    current_pan = track_marker(marker4, frame.shape[1], current_pan)
+                    current_pan = track_marker(marker4, frame.shape[1], current_pan, reverse_mode)
 
             elif current_state == STATE_SEARCH_5:
                 if marker5:
@@ -236,7 +236,7 @@ def main(headless=False):
                     reset_pan()
                     current_state = STATE_TURN_AROUND
                 else:
-                    current_pan = track_marker(marker5, frame.shape[1], current_pan)
+                    current_pan = track_marker(marker5, frame.shape[1], current_pan, reverse_mode)
 
             elif current_state == STATE_TURN_AROUND:
                 stop_car()
@@ -256,7 +256,7 @@ def main(headless=False):
                     reset_pan()
                     current_state = STATE_REVERSE_SEARCH_3
                 else:
-                    current_pan = track_marker(marker4, frame.shape[1], current_pan)
+                    current_pan = track_marker(marker4, frame.shape[1], current_pan, reverse_mode)
 
             elif current_state == STATE_REVERSE_SEARCH_3:
                 if marker3:
@@ -270,7 +270,7 @@ def main(headless=False):
                     reset_pan()
                     current_state = STATE_REVERSE_SEARCH_2
                 else:
-                    current_pan = track_marker(marker3, frame.shape[1], current_pan)
+                    current_pan = track_marker(marker3, frame.shape[1], current_pan, reverse_mode)
 
             elif current_state == STATE_REVERSE_SEARCH_2:
                 if marker2:
@@ -284,7 +284,7 @@ def main(headless=False):
                     reset_pan()
                     current_state = STATE_REVERSE_SEARCH_1
                 else:
-                    current_pan = track_marker(marker2, frame.shape[1], current_pan)
+                    current_pan = track_marker(marker2, frame.shape[1], current_pan, reverse_mode)
 
             elif current_state == STATE_REVERSE_SEARCH_1:
                 if marker1:
@@ -297,7 +297,7 @@ def main(headless=False):
                     stop_car()
                     current_state = STATE_DONE
                 else:
-                    current_pan = track_marker(marker1, frame.shape[1], current_pan)
+                    current_pan = track_marker(marker1, frame.shape[1], current_pan, reverse_mode)
 
             cv2.aruco.drawDetectedMarkers(frame, corners, ids)
             if not headless:
