@@ -96,10 +96,10 @@ def track_marker_pnp(rvec, tvec, reverse=False):
         px.backward(speed)
     else:
         px.forward(speed)
-    if (z) < 0.5:
+    if z < 0.5:
         print("Close to marker → stopping")
         stop_car()
-        state = STATE_SEARCH
+        return "close"
 
     print(f"[{'REV' if reverse else 'FWD'}] x:{x:.2f} z:{z:.2f} steer:{steer:.2f}")
 
@@ -137,7 +137,12 @@ def main(headless=False):
                 rvecs, tvecs, _ = cv2.aruco.estimatePoseSingleMarkers(
                     corners, marker_length, camera_matrix, dist_coeffs
                 )
-                track_marker_pnp(rvecs[0], tvecs[0], reverse_mode)
+                result = track_marker_pnp(rvecs[0], tvecs[0], reverse_mode)
+                if result == "close":
+                    state = STATE_SEARCH
+                    tracking = False
+                    stop_car()
+                    continue
             # -----------------------
             # DISPLAY
             # -----------------------
