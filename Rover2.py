@@ -83,7 +83,7 @@ def track_marker_pnp(rvec, tvec, reverse=False):
 
     yaw = np.arctan2(x, z)
 
-    steer = np.degrees(yaw) * 0.01
+    steer = np.degrees(yaw) * 0.5
 
     if reverse:
         steer *= -1
