@@ -83,12 +83,12 @@ def track_marker_pnp(rvec, tvec, reverse=False):
 
     yaw = np.arctan2(x, z)
 
-    steer = -np.degrees(yaw) * 1.002
+    steer = np.degrees(yaw) * 1.002
 
     if reverse:
-        steer *= 1
+        steer *= -1
 
-    steer = float(np.clip(steer, -30, 30))
+    steer = -float(np.clip(steer, -30, 30))
 
     px.set_dir_servo_angle(steer)
 
