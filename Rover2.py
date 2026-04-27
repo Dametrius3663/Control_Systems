@@ -160,12 +160,12 @@ def main(headless=False):
                         continue
                     continue
 
-                if 9 in marker_map:
-                    i = marker_map[9]
-                    print("Marker 9 → APPROACHING")
+                if 10 in marker_map:
+                    i = marker_map[10]
+                    print("Marker 10 → APPROACHING")
                     result = track_marker_pnp(rvecs[i], tvecs[i], reverse_mode)
                     if result == "close":
-                        print("Marker 9 → CLOSE → TURN LEFT")
+                        print("Marker 10 → CLOSE → TURN LEFT")
                         stop_car()
                         px.set_dir_servo_angle(-25)
                         px.forward(speed)
@@ -175,9 +175,9 @@ def main(headless=False):
                         continue
                     continue
 
-                if 10 in marker_map:
-                    i = marker_map[10]
-                    print("Marker 10 → ACTION: REVERSE")
+                if 11 in marker_map:
+                    i = marker_map[11]
+                    print("Marker 11 → ACTION: REVERSE")
                     px.backward(speed)
                     continue
 
