@@ -108,89 +108,114 @@ def track_marker_pnp(rvec, tvec, reverse=False):
 # MAIN LOOP
 # -----------------------
 def main(headless=False):
-    global state, tracking, reverse_mode
+    global state, tracking, reverse_mode, active_target
+
     try:
         while state != STATE_DONE:
+
             ret, frame = cap.read()
             if not ret:
                 break
+
             corners, ids, _ = detector.detectMarkers(frame)
 
             # -----------------------
             # SEARCH MODE
             # -----------------------
             if state == STATE_SEARCH:
+
                 pan_sweep()
                 stop_car()
+
                 if ids is not None:
                     print("Marker found → switching to TRACK")
                     state = STATE_TRACK
                     tracking = True
+                    active_target = None  # reset latch when entering TRACK
+
+
             # -----------------------
             # TRACK MODE
             # -----------------------
             elif state == STATE_TRACK:
+
                 # SAFETY CHECK
                 if ids is None or len(ids) == 0:
                     state = STATE_SEARCH
                     stop_car()
+                    active_target = None
                     continue
 
                 rvecs, tvecs, _ = cv2.aruco.estimatePoseSingleMarkers(
                     corners, marker_length, camera_matrix, dist_coeffs
                 )
-                #MRKER MAP
-                marker_map = {int(id_val): i for i, id_val in enumerate(ids.flatten())}
-                # ----------------------------
-                # 1. SPECIAL ACTIONS FIRST
-                # ----------------------------
 
-                if 8 in marker_map:
-                    i = marker_map[8]
-                    print("Marker 8 → ACTION: track")
-                    result = track_marker_pnp(rvecs[i], tvecs[i], reverse_mode)
-                    if result == "close":
-                        state = STATE_SEARCH
-                        tracking = False
-                        stop_car()
-                        continue
+                marker_map = {int(id_val): i for i, id_val in enumerate(ids.flatten())}
+
+                # ----------------------------
+                # LATCH TARGET (STABLE PRIORITY)
+                # ----------------------------
+                if active_target is None:
+
+                    if 10 in marker_map:
+                        active_target = 10
+                    elif 8 in marker_map:
+                        active_target = 8
+                    elif 11 in marker_map:
+                        active_target = 11
+
+                # If target disappears → reset latch
+                if active_target not in marker_map:
+                    active_target = None
                     continue
 
-                if 10 in marker_map:
-                    i = marker_map[10]
-                    print("Marker 10 → APPROACHING")
-                    result = track_marker_pnp(rvecs[i], tvecs[i], reverse_mode)
-                    if result == "close":
+                i = marker_map[active_target]
+
+                # ----------------------------
+                # EXECUTE BEHAVIOR
+                # ----------------------------
+                result = track_marker_pnp(
+                    rvecs[i],
+                    tvecs[i],
+                    reverse_mode
+                )
+
+                # ----------------------------
+                # COMPLETION LOGIC
+                # ----------------------------
+                if result == "close":
+
+                    if active_target == 10:
                         print("Marker 10 → CLOSE → TURN LEFT")
                         stop_car()
+
                         px.set_dir_servo_angle(-25)
                         px.forward(speed)
-                        # optional small timed turn
-                        time.sleep(1.0)  # turn for 1 second
+                        time.sleep(1.0)
+
                         stop_car()
-                        continue
+
+                    elif active_target == 8:
+                        print("Marker 8 → DONE")
+                        stop_car()
+
+                    elif active_target == 11:
+                        print("Marker 11 → REVERSE DONE")
+                        stop_car()
+
+                    # reset system after any action
+                    state = STATE_SEARCH
+                    tracking = False
+                    active_target = None
+                    stop_car()
                     continue
 
-                if 11 in marker_map:
-                    i = marker_map[11]
-                    print("Marker 11 → ACTION: REVERSE")
-                    px.backward(speed)
-                    continue
 
-                # ----------------------------
-                # 2. DEFAULT BEHAVIOR (TRACKING)
-                # ----------------------------
-
-                # pick one target marker (example: highest priority)
-                target_id = 11
-
-                if target_id in marker_map:
-                    i = marker_map[target_id]
-                    track_marker_pnp(rvecs[i], tvecs[i], reverse_mode)
             # -----------------------
             # DISPLAY
             # -----------------------
             cv2.aruco.drawDetectedMarkers(frame, corners, ids)
+
             if not headless:
                 cv2.imshow("Rover", frame)
                 if cv2.waitKey(1) == ord('q'):
