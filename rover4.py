@@ -75,9 +75,9 @@ def search_motion():
     px.forward(15)
 
 # -----------------------
-# SolvePnP tracking
+# SolvePnP tracking (NOW WITH CONFIDENCE)
 # -----------------------
-def track_marker_pnp(rvec, tvec, reverse=False):
+def track_marker_pnp(rvec, tvec, confidence, reverse=False):
 
     tvec = np.array(tvec).reshape(3,)
     x = float(tvec[0])
@@ -90,6 +90,11 @@ def track_marker_pnp(rvec, tvec, reverse=False):
 
     if reverse:
         steer *= -1
+
+    # -----------------------
+    # CONFIDENCE WEIGHTING (FIX #2)
+    # -----------------------
+    steer *= confidence
 
     steer = float(np.clip(steer, -30, 30))
 
@@ -105,7 +110,7 @@ def track_marker_pnp(rvec, tvec, reverse=False):
         stop_car()
         return "close"
 
-    print(f"[{'REV' if reverse else 'FWD'}] x:{x:.2f} z:{z:.2f} steer:{steer:.2f}")
+    print(f"[{'REV' if reverse else 'FWD'}] x:{x:.2f} z:{z:.2f} conf:{confidence:.2f} steer:{steer:.2f}")
 
 # -----------------------
 # MAIN LOOP
@@ -123,7 +128,7 @@ def main(headless=False):
             corners, ids, _ = detector.detectMarkers(frame)
 
             # -----------------------
-            # SEARCH MODE (NO PAN)
+            # SEARCH MODE
             # -----------------------
             if state == STATE_SEARCH:
 
@@ -170,7 +175,19 @@ def main(headless=False):
 
                 i = marker_map[active_target]
 
-                result = track_marker_pnp(rvecs[i], tvecs[i], reverse_mode)
+                # -----------------------
+                # CONFIDENCE CALCULATION (FIX #2)
+                # -----------------------
+                area = cv2.contourArea(corners[i][0])
+
+                confidence = np.clip(area / 5000.0, 0.2, 1.0)
+
+                result = track_marker_pnp(
+                    rvecs[i],
+                    tvecs[i],
+                    confidence,
+                    reverse_mode
+                )
 
                 # -----------------------
                 # COMPLETION LOGIC
