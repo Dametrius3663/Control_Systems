@@ -75,7 +75,7 @@ def search_motion():
     px.forward(15)
     time.sleep(1)
     px.set_dir_servo_angle(-25)
-    px.forward(15)
+    px.forward(30)
     time.sleep(1)
 
 # -----------------------
