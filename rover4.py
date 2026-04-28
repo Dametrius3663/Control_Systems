@@ -25,10 +25,10 @@ if not cap.isOpened():
     exit()
 
 detector = aruco.ArucoDetector(aruco_dict, aruco_params)
-marker_length = marker_size / 100  # cm → meters
+marker_length = marker_size / 100
 
 # -----------------------
-# Control params
+# Control
 # -----------------------
 speed = 100
 current_speed = 0
@@ -47,14 +47,13 @@ def update_speed(target_speed):
     return current_speed
 
 # -----------------------
-# STATE MACHINE
+# STATE
 # -----------------------
 STATE_SEARCH = 0
 STATE_TRACK = 1
 STATE_DONE = 2
 
 state = STATE_SEARCH
-tracking = False
 active_target = None
 reverse_mode = False
 
@@ -65,14 +64,34 @@ def stop_car():
     px.stop()
     px.set_dir_servo_angle(0)
 
-# -----------------------
-# SEARCH MODE
-# -----------------------
+# =========================================================
+# 🔥 IMPROVED SEARCH MODE (FIX)
+# =========================================================
+
+search_angle = -25
+search_dir = 1
+last_search_switch = time.time()
+
 def search_motion():
-    px.forward(15)
+    """
+    Continuous sweep + forward motion.
+    Prevents freezing and improves re-acquisition.
+    """
+    global search_angle, search_dir, last_search_switch
+
+    # slowly oscillate steering angle
+    if time.time() - last_search_switch > 1.2:
+        search_dir *= -1
+        last_search_switch = time.time()
+
+    search_angle += search_dir * 2
+    search_angle = max(-30, min(30, search_angle))
+
+    px.set_dir_servo_angle(search_angle)
+    px.forward(25)
 
 # -----------------------
-# ACTIONS (NON-BLOCKING NOW)
+# ACTIONS
 # -----------------------
 def AtMarker8():
     print("At Marker 8 → VEER")
@@ -117,7 +136,7 @@ def track_marker_pnp(rvec, tvec, reverse=False):
 # MAIN LOOP
 # -----------------------
 def main(headless=False):
-    global state, tracking, active_target
+    global state, active_target
 
     try:
         while state != STATE_DONE:
@@ -129,21 +148,19 @@ def main(headless=False):
             corners, ids, _ = detector.detectMarkers(frame)
 
             # -----------------------
-            # SEARCH
+            # SEARCH MODE (FIXED)
             # -----------------------
             if state == STATE_SEARCH:
 
                 search_motion()
-                stop_car()
 
                 if ids is not None:
                     print("Marker found → TRACK")
                     state = STATE_TRACK
-                    tracking = True
                     active_target = None
 
             # -----------------------
-            # TRACK
+            # TRACK MODE
             # -----------------------
             elif state == STATE_TRACK:
 
@@ -159,9 +176,7 @@ def main(headless=False):
 
                 marker_map = {int(id_val): i for i, id_val in enumerate(ids.flatten())}
 
-                # -----------------------
-                # TARGET SELECTION
-                # -----------------------
+                # target priority
                 if active_target is None:
                     if 10 in marker_map:
                         active_target = 10
@@ -182,7 +197,7 @@ def main(headless=False):
                 )
 
                 # -----------------------
-                # ACTION EXECUTION (FIXED)
+                # ACTIONS
                 # -----------------------
                 if result == "close":
 
@@ -197,12 +212,9 @@ def main(headless=False):
                         stop_car()
 
                     elif active_target == 11:
-                        print("Marker 11 → REVERSE DONE")
                         stop_car()
 
-                    # reset AFTER action completes
                     state = STATE_SEARCH
-                    tracking = False
                     active_target = None
                     stop_car()
                     continue
@@ -216,17 +228,11 @@ def main(headless=False):
                 cv2.imshow("Rover", frame)
                 if cv2.waitKey(1) == ord('q'):
                     break
-
-    except KeyboardInterrupt:
-        pass
-
     finally:
         stop_car()
         cap.release()
         cv2.destroyAllWindows()
         print("Shutdown complete")
-
-
 # -----------------------
 # ENTRY
 # -----------------------
