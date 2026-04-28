@@ -25,7 +25,6 @@ if not cap.isOpened():
     exit()
 
 detector = aruco.ArucoDetector(aruco_dict, aruco_params)
-
 marker_length = marker_size / 100  # cm → meters
 
 # -----------------------
@@ -47,18 +46,17 @@ def update_speed(target_speed):
     current_speed = max(0, min(current_speed, max_speed))
     return current_speed
 
-tracking = False
-reverse_mode = False
-active_target = None
-
 # -----------------------
-# STATES
+# STATE MACHINE
 # -----------------------
 STATE_SEARCH = 0
 STATE_TRACK = 1
 STATE_DONE = 2
 
 state = STATE_SEARCH
+tracking = False
+active_target = None
+reverse_mode = False
 
 # -----------------------
 # SAFE STOP
@@ -68,26 +66,26 @@ def stop_car():
     px.set_dir_servo_angle(0)
 
 # -----------------------
-# SEARCH (NO PAN → ROTATE ROBOT)
+# SEARCH MODE
 # -----------------------
 def search_motion():
-    #px.set_dir_servo_angle(25)
     px.forward(15)
-
-def AtMarker8():
-    print("At Marker 8")
-    px.set_dir_servo_angle(35)
-    px.forward(15)
-    time.sleep(1.0)
-
-def AtMarker10():
-    print("At Marker 10")
-    px.set_dir_servo_angle(-45)
-    px.forward(15)
-    time.sleep(2.0)
 
 # -----------------------
-# SolvePnP tracking
+# ACTIONS (NON-BLOCKING NOW)
+# -----------------------
+def AtMarker8():
+    print("At Marker 8 → VEER")
+    px.set_dir_servo_angle(35)
+    px.forward(update_speed(speed))
+
+def AtMarker10():
+    print("At Marker 10 → TURN")
+    px.set_dir_servo_angle(-45)
+    px.forward(update_speed(speed))
+
+# -----------------------
+# TRACKING
 # -----------------------
 def track_marker_pnp(rvec, tvec, reverse=False):
 
@@ -108,30 +106,18 @@ def track_marker_pnp(rvec, tvec, reverse=False):
     px.set_dir_servo_angle(steer)
     px.forward(update_speed(speed))
 
-    print(f"[{'REV' if reverse else 'FWD'}] x:{x:.2f} z:{z:.2f} steer:{steer:.2f}")
-
-    # -----------------------
-    # ONLY MARKER ACTION LOGIC (NEW)
-    # -----------------------
+    print(f"[TRACK] x:{x:.2f} z:{z:.2f} steer:{steer:.2f}")
 
     if z < 0.5:
-        print("Close to marker → stopping")
-
+        print("Close → trigger action")
         stop_car()
-
-        if active_target == 8:
-            AtMarker8()
-
-        elif active_target == 10:
-            AtMarker10()
-
         return "close"
 
 # -----------------------
 # MAIN LOOP
 # -----------------------
 def main(headless=False):
-    global state, tracking, reverse_mode, active_target
+    global state, tracking, active_target
 
     try:
         while state != STATE_DONE:
@@ -143,7 +129,7 @@ def main(headless=False):
             corners, ids, _ = detector.detectMarkers(frame)
 
             # -----------------------
-            # SEARCH MODE (NO PAN)
+            # SEARCH
             # -----------------------
             if state == STATE_SEARCH:
 
@@ -151,13 +137,13 @@ def main(headless=False):
                 stop_car()
 
                 if ids is not None:
-                    print("Marker found → switching to TRACK")
+                    print("Marker found → TRACK")
                     state = STATE_TRACK
                     tracking = True
                     active_target = None
 
             # -----------------------
-            # TRACK MODE
+            # TRACK
             # -----------------------
             elif state == STATE_TRACK:
 
@@ -174,7 +160,7 @@ def main(headless=False):
                 marker_map = {int(id_val): i for i, id_val in enumerate(ids.flatten())}
 
                 # -----------------------
-                # TARGET LATCH
+                # TARGET SELECTION
                 # -----------------------
                 if active_target is None:
                     if 10 in marker_map:
@@ -185,34 +171,36 @@ def main(headless=False):
                         active_target = 11
 
                 if active_target not in marker_map:
-                    active_target = None
                     continue
 
                 i = marker_map[active_target]
 
-                result = track_marker_pnp(rvecs[i], tvecs[i], reverse_mode)
+                result = track_marker_pnp(
+                    rvecs[i],
+                    tvecs[i],
+                    reverse_mode
+                )
 
                 # -----------------------
-                # COMPLETION LOGIC
+                # ACTION EXECUTION (FIXED)
                 # -----------------------
                 if result == "close":
 
-                    if active_target == 10:
-                        print("Marker 10 → TURN LEFT")
-                        stop_car()
-                        px.set_dir_servo_angle(-25)
-                        px.forward(update_speed(speed))
+                    if active_target == 8:
+                        AtMarker8()
                         time.sleep(1.0)
                         stop_car()
 
-                    elif active_target == 8:
-                        print("Marker 8 → DONE")
+                    elif active_target == 10:
+                        AtMarker10()
+                        time.sleep(2.0)
                         stop_car()
 
                     elif active_target == 11:
                         print("Marker 11 → REVERSE DONE")
                         stop_car()
 
+                    # reset AFTER action completes
                     state = STATE_SEARCH
                     tracking = False
                     active_target = None
