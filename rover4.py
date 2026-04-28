@@ -70,7 +70,7 @@ def stop_car():
 # -----------------------
 def AtMarker8():
     print("Marker 8 → VEER")
-    px.set_dir_servo_angle(35)
+    px.set_dir_servo_angle(25)
     px.forward(update_speed(speed))
 
 def AtMarker10():
