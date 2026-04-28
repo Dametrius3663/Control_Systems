@@ -73,6 +73,10 @@ def stop_car():
 def search_motion():
     px.set_dir_servo_angle(25)
     px.forward(15)
+    time.sleep(1)
+    px.set_dir_servo_angle(-25)
+    px.forward(15)
+    time.sleep(1)
 
 # -----------------------
 # SolvePnP tracking (NOW WITH CONFIDENCE)
