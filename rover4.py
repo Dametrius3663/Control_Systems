@@ -123,7 +123,7 @@ def track_marker_pnp(rvec, tvec, reverse=False):
 
         if target == 8:
             AtMarker8()
-            time.sleep(1.0)
+            time.sleep(0.2)
             stop_car()
 
         elif target == 10:
