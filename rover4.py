@@ -25,7 +25,6 @@ if not cap.isOpened():
     exit()
 
 detector = aruco.ArucoDetector(aruco_dict, aruco_params)
-
 marker_length = marker_size / 100  # cm → meters
 
 # -----------------------
@@ -47,18 +46,23 @@ def update_speed(target_speed):
     current_speed = max(0, min(current_speed, max_speed))
     return current_speed
 
-tracking = False
-reverse_mode = False
-active_target = None
-
 # -----------------------
-# STATES
+# STATE MACHINE
 # -----------------------
 STATE_SEARCH = 0
 STATE_TRACK = 1
 STATE_DONE = 2
 
 state = STATE_SEARCH
+tracking = False
+active_target = None
+reverse_mode = False
+
+# -----------------------
+# LOSS PERSISTENCE (FIX)
+# -----------------------
+last_seen_time = 0
+lost_timeout = 0.6  # seconds before declaring marker "gone"
 
 # -----------------------
 # SAFE STOP
@@ -68,18 +72,15 @@ def stop_car():
     px.set_dir_servo_angle(0)
 
 # -----------------------
-# SEARCH (NO PAN → ROTATE ROBOT)
+# SEARCH MODE (stable, no jitter)
 # -----------------------
 def search_motion():
-    px.set_dir_servo_angle(25)
-    px.forward(15)
-    time.sleep(1)
-    px.set_dir_servo_angle(-25)
-    px.forward(30)
-    time.sleep(1)
+    # slow forward crawl with slight steering bias
+    px.set_dir_servo_angle(20)
+    px.forward(10)
 
 # -----------------------
-# SolvePnP tracking (NOW WITH CONFIDENCE)
+# TRACKING FUNCTION WITH CONFIDENCE
 # -----------------------
 def track_marker_pnp(rvec, tvec, confidence, reverse=False):
 
@@ -90,14 +91,13 @@ def track_marker_pnp(rvec, tvec, confidence, reverse=False):
     if abs(z) < 1e-6:
         return
 
-    steer = np.degrees(np.arctan2(x, z)) * -0.99
+    # basic angle control
+    steer = np.degrees(np.arctan2(x, z)) * 0.99
 
     if reverse:
-        steer *= 1
+        steer *= -1
 
-    # -----------------------
-    # CONFIDENCE WEIGHTING (FIX #2)
-    # -----------------------
+    # confidence weighting (stabilizes far detection)
     steer *= confidence
 
     steer = float(np.clip(steer, -30, 30))
@@ -114,13 +114,13 @@ def track_marker_pnp(rvec, tvec, confidence, reverse=False):
         stop_car()
         return "close"
 
-    print(f"[{'REV' if reverse else 'FWD'}] x:{x:.2f} z:{z:.2f} conf:{confidence:.2f} steer:{steer:.2f}")
+    print(f"[TRACK] x:{x:.2f} z:{z:.2f} conf:{confidence:.2f} steer:{steer:.2f}")
 
 # -----------------------
 # MAIN LOOP
 # -----------------------
 def main(headless=False):
-    global state, tracking, reverse_mode, active_target
+    global state, tracking, active_target, last_seen_time
 
     try:
         while state != STATE_DONE:
@@ -131,30 +131,49 @@ def main(headless=False):
 
             corners, ids, _ = detector.detectMarkers(frame)
 
-            # -----------------------
+            # =======================
+            # MARKER DETECTION STABILITY FIX
+            # =======================
+
+            marker_visible = ids is not None and len(ids) > 0
+
+            if marker_visible:
+                last_seen_time = time.time()
+
+            # =======================
             # SEARCH MODE
-            # -----------------------
+            # =======================
             if state == STATE_SEARCH:
 
                 search_motion()
                 stop_car()
 
-                if ids is not None:
-                    print("Marker found → switching to TRACK")
+                if marker_visible:
+                    print("Marker detected → switching to TRACK")
                     state = STATE_TRACK
                     tracking = True
                     active_target = None
 
-            # -----------------------
+            # =======================
             # TRACK MODE
-            # -----------------------
+            # =======================
             elif state == STATE_TRACK:
 
-                if ids is None or len(ids) == 0:
-                    state = STATE_SEARCH
-                    stop_car()
-                    active_target = None
-                    continue
+                # -----------------------
+                # LOST MARKER HANDLING (FIX)
+                # -----------------------
+                if not marker_visible:
+                    if time.time() - last_seen_time > lost_timeout:
+                        print("Marker lost → returning to SEARCH")
+                        state = STATE_SEARCH
+                        tracking = False
+                        active_target = None
+                        stop_car()
+                        continue
+                    else:
+                        # short dropout → ignore (prevents shake)
+                        px.forward(update_speed(40))
+                        continue
 
                 rvecs, tvecs, _ = cv2.aruco.estimatePoseSingleMarkers(
                     corners, marker_length, camera_matrix, dist_coeffs
@@ -163,7 +182,7 @@ def main(headless=False):
                 marker_map = {int(id_val): i for i, id_val in enumerate(ids.flatten())}
 
                 # -----------------------
-                # TARGET LATCH
+                # TARGET SELECTION
                 # -----------------------
                 if active_target is None:
                     if 10 in marker_map:
@@ -174,16 +193,14 @@ def main(headless=False):
                         active_target = 11
 
                 if active_target not in marker_map:
-                    active_target = None
                     continue
 
                 i = marker_map[active_target]
 
                 # -----------------------
-                # CONFIDENCE CALCULATION (FIX #2)
+                # CONFIDENCE FROM AREA (STABILITY FIX)
                 # -----------------------
                 area = cv2.contourArea(corners[i][0])
-
                 confidence = np.clip(area / 5000.0, 0.2, 1.0)
 
                 result = track_marker_pnp(
@@ -218,11 +235,10 @@ def main(headless=False):
                     tracking = False
                     active_target = None
                     stop_car()
-                    continue
 
-            # -----------------------
+            # =======================
             # DISPLAY
-            # -----------------------
+            # =======================
             cv2.aruco.drawDetectedMarkers(frame, corners, ids)
 
             if not headless:
