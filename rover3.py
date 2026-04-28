@@ -71,7 +71,7 @@ def stop_car():
 # SEARCH (NO PAN → ROTATE ROBOT)
 # -----------------------
 def search_motion():
-    px.set_dir_servo_angle(25)
+    #px.set_dir_servo_angle(25)
     px.forward(15)
 
 # -----------------------
