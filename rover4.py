@@ -86,10 +86,10 @@ def track_marker_pnp(rvec, tvec, confidence, reverse=False):
     if abs(z) < 1e-6:
         return
 
-    steer = np.degrees(np.arctan2(x, z)) * 0.99
+    steer = np.degrees(np.arctan2(x, z)) * -0.99
 
     if reverse:
-        steer *= -1
+        steer *= 1
 
     # -----------------------
     # CONFIDENCE WEIGHTING (FIX #2)
