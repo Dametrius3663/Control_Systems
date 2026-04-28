@@ -47,22 +47,18 @@ def update_speed(target_speed):
     current_speed = max(0, min(current_speed, max_speed))
     return current_speed
 
+tracking = False
+reverse_mode = False
+active_target = None
+
 # -----------------------
-# STATE
+# STATES
 # -----------------------
 STATE_SEARCH = 0
 STATE_TRACK = 1
 STATE_DONE = 2
 
 state = STATE_SEARCH
-tracking = False
-active_target = None
-reverse_mode = False
-
-# -----------------------
-# TRIGGER LOCK (prevents spam firing)
-# -----------------------
-action_triggered = False
 
 # -----------------------
 # SAFE STOP
@@ -72,32 +68,28 @@ def stop_car():
     px.set_dir_servo_angle(0)
 
 # -----------------------
-# SEARCH
+# SEARCH (NO PAN → ROTATE ROBOT)
 # -----------------------
 def search_motion():
+    #px.set_dir_servo_angle(25)
     px.forward(15)
 
-# -----------------------
-# YOUR ACTION FUNCTIONS
-# -----------------------
 def AtMarker8():
-    print("At Marker 8 → VEER")
+    print("At Marker 8")
     px.set_dir_servo_angle(35)
-    px.forward(update_speed(speed))
+    px.forward(15)
     time.sleep(1.0)
 
 def AtMarker10():
-    print("At Marker 10 → TURN")
+    print("At Marker 10")
     px.set_dir_servo_angle(-45)
-    px.forward(update_speed(speed))
+    px.forward(15)
     time.sleep(2.0)
 
 # -----------------------
-# TRACKING
+# SolvePnP tracking
 # -----------------------
 def track_marker_pnp(rvec, tvec, reverse=False):
-
-    global action_triggered, active_target
 
     tvec = np.array(tvec).reshape(3,)
     x = float(tvec[0])
@@ -116,41 +108,30 @@ def track_marker_pnp(rvec, tvec, reverse=False):
     px.set_dir_servo_angle(steer)
     px.forward(update_speed(speed))
 
+    print(f"[{'REV' if reverse else 'FWD'}] x:{x:.2f} z:{z:.2f} steer:{steer:.2f}")
+
     # -----------------------
-    # EARLY ACTION ZONES (IMPORTANT CHANGE)
+    # ONLY MARKER ACTION LOGIC (NEW)
     # -----------------------
 
-    # reset trigger when far away
-    if z > 0.8:
-        action_triggered = False
-
-    # Marker 8 behavior (veer earlier)
-    if active_target == 8 and z < 0.75 and not action_triggered:
-        action_triggered = True
-        stop_car()
-        AtMarker8()
-        return "action"
-
-    # Marker 10 behavior (turn earlier)
-    if active_target == 10 and z < 0.85 and not action_triggered:
-        action_triggered = True
-        stop_car()
-        AtMarker10()
-        return "action"
-
-    # final stop condition
     if z < 0.5:
-        print("Close → stop")
-        stop_car()
-        return "close"
+        print("Close to marker → stopping")
 
-    print(f"[TRACK] x:{x:.2f} z:{z:.2f} steer:{steer:.2f}")
+        stop_car()
+
+        if active_target == 8:
+            AtMarker8()
+
+        elif active_target == 10:
+            AtMarker10()
+
+        return "close"
 
 # -----------------------
 # MAIN LOOP
 # -----------------------
 def main(headless=False):
-    global state, tracking, active_target, action_triggered
+    global state, tracking, reverse_mode, active_target
 
     try:
         while state != STATE_DONE:
@@ -162,7 +143,7 @@ def main(headless=False):
             corners, ids, _ = detector.detectMarkers(frame)
 
             # -----------------------
-            # SEARCH
+            # SEARCH MODE (NO PAN)
             # -----------------------
             if state == STATE_SEARCH:
 
@@ -170,13 +151,13 @@ def main(headless=False):
                 stop_car()
 
                 if ids is not None:
-                    print("Marker found → TRACK")
+                    print("Marker found → switching to TRACK")
                     state = STATE_TRACK
                     tracking = True
                     active_target = None
 
             # -----------------------
-            # TRACK
+            # TRACK MODE
             # -----------------------
             elif state == STATE_TRACK:
 
@@ -204,30 +185,39 @@ def main(headless=False):
                         active_target = 11
 
                 if active_target not in marker_map:
+                    active_target = None
                     continue
 
                 i = marker_map[active_target]
 
-                result = track_marker_pnp(
-                    rvecs[i],
-                    tvecs[i],
-                    reverse_mode
-                )
+                result = track_marker_pnp(rvecs[i], tvecs[i], reverse_mode)
 
                 # -----------------------
-                # COMPLETION
+                # COMPLETION LOGIC
                 # -----------------------
-                if result in ["close", "action"]:
+                if result == "close":
 
-                    if active_target == 11:
+                    if active_target == 10:
+                        print("Marker 10 → TURN LEFT")
+                        stop_car()
+                        px.set_dir_servo_angle(-25)
+                        px.forward(update_speed(speed))
+                        time.sleep(1.0)
+                        stop_car()
+
+                    elif active_target == 8:
+                        print("Marker 8 → DONE")
+                        stop_car()
+
+                    elif active_target == 11:
                         print("Marker 11 → REVERSE DONE")
                         stop_car()
 
                     state = STATE_SEARCH
                     tracking = False
                     active_target = None
-                    action_triggered = False
                     stop_car()
+                    continue
 
             # -----------------------
             # DISPLAY
