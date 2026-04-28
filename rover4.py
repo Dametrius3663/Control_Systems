@@ -109,7 +109,7 @@ def track_marker_pnp(rvec, tvec, reverse=False):
     # FRAME LOCK LOGIC (KEY FIX)
     # -----------------------
 
-    if 0.2 < z < 0.5:
+    if 1.0 < z < 1.5:
         close_counter += 1
     else:
         close_counter = 0
