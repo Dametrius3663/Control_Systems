@@ -78,6 +78,11 @@ def AtMarker10():
     px.set_dir_servo_angle(-45)
     px.forward(update_speed(speed))
 
+def AtMarker12():
+    print("Marker 12 → REVERSE")
+    px.set_dir_servo_angle(-45)
+    px.backward(update_speed(speed))
+
 # -----------------------
 # TRACKING
 # -----------------------
@@ -128,9 +133,13 @@ def track_marker_pnp(rvec, tvec, reverse=False):
 
         elif target == 10:
             AtMarker10()
-            time.sleep(2.0)
+            time.sleep(1.5)
             stop_car()
 
+        elif target == 12:
+            AtMarker12()
+            time.sleep(3)
+            stop_car()
         close_counter = 0
         return "close"
 
