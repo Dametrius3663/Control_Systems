@@ -74,6 +74,18 @@ def search_motion():
     #px.set_dir_servo_angle(25)
     px.forward(15)
 
+def AtMarker8():
+    print("At Marker 8")
+    px.set_dir_servo_angle(35)
+    px.forward(15)
+    time.sleep(1.0)
+
+def AtMarker10():
+    print("At Marker 10")
+    px.set_dir_servo_angle(-45)
+    px.forward(15)
+    time.sleep(2.0)
+
 # -----------------------
 # SolvePnP tracking
 # -----------------------
