@@ -83,7 +83,7 @@ def AtMarker2():
     time.sleep(3.75)
     px.set_dir_servo_angle(25)
     px.forward(update_speed(speed))
-    time.sleep(1)
+    time.sleep(0.75)
 
 def AtMarker4():
     print("Marker 4 → VEER PATH")
@@ -91,15 +91,12 @@ def AtMarker4():
     px.forward(update_speed(speed))
     time.sleep(1)
     px.set_dir_servo_angle(-4)
-    time.sleep(2)
-    px.set_dir_servo_angle(25)
-    px.forward(update_speed(speed))
-    time.sleep(0.2)
+    time.sleep(2.5)
 
 def AtMarker6():
     print("Marker 6 → VEER")
     px.set_dir_servo_angle(25)
-    px.forward(update_speed(speed))
+    px.backward(update_speed(speed))
 
 def AtMarker10():
     print("Marker 10 → TURN")
@@ -187,7 +184,7 @@ def track_marker_pnp(rvec, tvec, reverse=False):
 
         elif target == 6:
             AtMarker6()
-            time.sleep(3.75)
+            time.sleep(2.9)
             stop_car()
 
         elif target == 10:
@@ -204,7 +201,7 @@ def track_marker_pnp(rvec, tvec, reverse=False):
 
         elif target == 12:
             AtMarker12()
-            time.sleep(3.75)
+            time.sleep(2.9)
             stop_car()
 
         elif target == 15:
