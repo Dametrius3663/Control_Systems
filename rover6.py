@@ -52,15 +52,9 @@ def update_speed(target_speed):
 active_target = None
 reverse_mode = False
 
-# -----------------------
-# FRAME LOCK SYSTEM
-# -----------------------
 close_counter = 0
 close_threshold_frames = 5
 
-# -----------------------
-# LOST TARGET SYSTEM (NEW)
-# -----------------------
 lost_counter = 0
 lost_threshold_frames = 5
 
@@ -80,7 +74,7 @@ def AtMarker1():
     px.forward(update_speed(speed))
 
 def AtMarker2():
-    print("Marker 2 → VEER")
+    print("Marker 2 → COMPLEX PATH")
     px.set_dir_servo_angle(15)
     px.forward(update_speed(speed))
     time.sleep(0.5)
@@ -92,7 +86,7 @@ def AtMarker2():
     time.sleep(1)
 
 def AtMarker4():
-    print("Marker 4 → VEER")
+    print("Marker 4 → VEER PATH")
     px.set_dir_servo_angle(-25)
     px.forward(update_speed(speed))
     time.sleep(1)
@@ -103,7 +97,6 @@ def AtMarker4():
     time.sleep(1)
     px.set_dir_servo_angle(-4)
     time.sleep(1.5)
-
 
 def AtMarker6():
     print("Marker 6 → VEER")
@@ -160,7 +153,7 @@ def track_marker_pnp(rvec, tvec, reverse=False):
     px.set_dir_servo_angle(steer)
     px.forward(update_speed(speed))
 
-    print(f"[TRACK] id:{active_target} x:{x:.2f} z:{z:.2f} steer:{steer:.2f} close_count:{close_counter}")
+    print(f"[TRACK] id:{active_target} x:{x:.2f} z:{z:.2f} steer:{steer:.2f} close:{close_counter}")
 
     # Frame lock logic
     if z < 1.75:
@@ -252,7 +245,7 @@ def main(headless=False):
             corners, ids, _ = detector.detectMarkers(frame)
 
             # -----------------------
-            # NO MARKER CASE (UPDATED)
+            # NO MARKER CASE
             # -----------------------
             if ids is None or len(ids) == 0:
                 lost_counter += 1
@@ -271,26 +264,19 @@ def main(headless=False):
             marker_map = {int(id_val): i for i, id_val in enumerate(ids.flatten())}
 
             # -----------------------
-            # TARGET LATCH
+            # TARGET LATCH (FIXED)
             # -----------------------
             if active_target is None:
-                if  2 or 10 or 12 in marker_map:
-                    active_target = 2 or 10 or 12
-                elif 1 in marker_map:
-                    active_target = 1
-                elif 4 in marker_map:
-                    active_target = 4
-                elif 6 in marker_map:
-                    active_target = 6
-                elif 11 in marker_map:
-                    active_target = 11
-                elif 15 in marker_map:
-                    active_target = 15
-                elif 17 in marker_map:
-                    active_target = 17
+
+                priority_targets = [2, 10, 12, 1, 4, 6, 11, 15, 17]
+
+                for t in priority_targets:
+                    if t in marker_map:
+                        active_target = t
+                        break
 
             # -----------------------
-            # TARGET NOT FOUND (UPDATED)
+            # TARGET LOST
             # -----------------------
             if active_target not in marker_map:
                 lost_counter += 1
@@ -303,7 +289,6 @@ def main(headless=False):
 
             i = marker_map[active_target]
 
-            # RESET LOST COUNTER (we see the marker)
             lost_counter = 0
 
             result = track_marker_pnp(
@@ -317,9 +302,6 @@ def main(headless=False):
                 close_counter = 0
                 stop_car()
 
-            # -----------------------
-            # DISPLAY
-            # -----------------------
             cv2.aruco.drawDetectedMarkers(frame, corners, ids)
 
             if not headless:
