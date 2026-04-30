@@ -147,7 +147,7 @@ def track_marker_pnp(rvec, tvec, reverse=False):
     print(f"[TRACK] id:{active_target} x:{x:.2f} z:{z:.2f} steer:{steer:.2f} close_count:{close_counter}")
 
     # Frame lock logic
-    if 1.0 < z < 1.5:
+    if z < 1.75:
         close_counter += 1
     else:
         close_counter = 0
