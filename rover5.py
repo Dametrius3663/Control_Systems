@@ -96,8 +96,8 @@ def AtMarker4():
     px.set_dir_servo_angle(25)
     px.forward(update_speed(speed))
 
-def AtMarker6():
-    print("Marker 6 → VEER")
+def AtMarker7():
+    print("Marker 7 → VEER")
     px.set_dir_servo_angle(25)
     px.forward(update_speed(speed))
 
@@ -181,8 +181,8 @@ def track_marker_pnp(rvec, tvec, reverse=False):
             time.sleep(3)
             stop_car()
 
-        elif target == 6:
-            AtMarker6()
+        elif target == 7:
+            AtMarker7()
             time.sleep(1.5)
             px.forward(update_speed(speed))
             time.sleep(3)
@@ -276,8 +276,8 @@ def main(headless=False):
                     active_target = 2
                 elif 4 in marker_map:
                     active_target = 4
-                elif 6 in marker_map:
-                    active_target = 6
+                elif 7 in marker_map:
+                    active_target = 7
                 elif 11 in marker_map:
                     active_target = 11
                 elif 12 in marker_map:
