@@ -105,6 +105,13 @@ def AtMarker10():
     print("Marker 10 → TURN")
     px.set_dir_servo_angle(-45)
     px.forward(update_speed(speed))
+    time.sleep(2)
+    px.set_dir_servo_angle(-4)
+    px.forward(update_speed(speed))
+    time.sleep(4.5)
+    px.set_dir_servo_angle(-20)
+    px.forward(update_speed(speed))
+    time.sleep(1.2)
 
 def AtMarker11():
     print("Marker 11 → STRAIGHT")
@@ -185,13 +192,6 @@ def track_marker_pnp(rvec, tvec, reverse=False):
 
         elif target == 10:
             AtMarker10()
-            time.sleep(2)
-            px.set_dir_servo_angle(-4)
-            px.forward(update_speed(speed))
-            time.sleep(5.5)
-            px.set_dir_servo_angle(-10)
-            px.forward(update_speed(speed))
-            time.sleep(0.9)
             stop_car()
 
         elif target == 11:
