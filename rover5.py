@@ -86,8 +86,8 @@ def AtMarker2():
     time.sleep(0.5)
     px.set_dir_servo_angle(0)
     px.forward(update_speed(speed))
-    time.sleep(1.5)
-    px.set_dir_servo_angle(45)
+    time.sleep(3.5)
+    px.set_dir_servo_angle(25)
     px.forward(update_speed(speed))
     time.sleep(0.15)
 
