@@ -53,10 +53,16 @@ active_target = None
 reverse_mode = False
 
 # -----------------------
-# FRAME LOCK SYSTEM (NEW)
+# FRAME LOCK SYSTEM
 # -----------------------
 close_counter = 0
-close_threshold_frames = 5   # must be close for 5 consecutive frames
+close_threshold_frames = 5
+
+# -----------------------
+# LOST TARGET SYSTEM (NEW)
+# -----------------------
+lost_counter = 0
+lost_threshold_frames = 5
 
 # -----------------------
 # SAFE STOP
@@ -140,11 +146,8 @@ def track_marker_pnp(rvec, tvec, reverse=False):
 
     print(f"[TRACK] id:{active_target} x:{x:.2f} z:{z:.2f} steer:{steer:.2f} close_count:{close_counter}")
 
-    # -----------------------
-    # FRAME LOCK LOGIC (KEY FIX)
-    # -----------------------
-
-    if 1 < z < 1.5:
+    # Frame lock logic
+    if 1.0 < z < 1.5:
         close_counter += 1
     else:
         close_counter = 0
@@ -153,14 +156,13 @@ def track_marker_pnp(rvec, tvec, reverse=False):
         print("LOCKED CLOSE → executing action")
 
         stop_car()
-
-        target = active_target  # LOCK ID
+        target = active_target
 
         if target == 1:
             AtMarker1()
             time.sleep(0.1)
             stop_car()
-        
+
         elif target == 2:
             AtMarker10()
             time.sleep(1.5)
@@ -188,7 +190,7 @@ def track_marker_pnp(rvec, tvec, reverse=False):
             px.forward(update_speed(speed))
             time.sleep(3)
             stop_car()
-        
+
         elif target == 11:
             AtMarker11()
             time.sleep(0.15)
@@ -212,6 +214,7 @@ def track_marker_pnp(rvec, tvec, reverse=False):
             px.forward(update_speed(speed))
             time.sleep(3)
             stop_car()
+
         close_counter = 0
         return "close"
 
@@ -220,7 +223,7 @@ def track_marker_pnp(rvec, tvec, reverse=False):
 # -----------------------
 def main(headless=False):
 
-    global active_target, close_counter
+    global active_target, close_counter, lost_counter
 
     try:
         while True:
@@ -232,12 +235,16 @@ def main(headless=False):
             corners, ids, _ = detector.detectMarkers(frame)
 
             # -----------------------
-            # NO MARKER CASE
+            # NO MARKER CASE (UPDATED)
             # -----------------------
             if ids is None or len(ids) == 0:
-                stop_car()
-                active_target = None
-                close_counter = 0
+                lost_counter += 1
+
+                if lost_counter >= lost_threshold_frames:
+                    stop_car()
+                    active_target = None
+                    close_counter = 0
+
                 continue
 
             rvecs, tvecs, _ = cv2.aruco.estimatePoseSingleMarkers(
@@ -268,14 +275,23 @@ def main(headless=False):
                     active_target = 15
                 elif 17 in marker_map:
                     active_target = 17
-                
 
+            # -----------------------
+            # TARGET NOT FOUND (UPDATED)
+            # -----------------------
             if active_target not in marker_map:
-                active_target = None
-                close_counter = 0
+                lost_counter += 1
+
+                if lost_counter >= lost_threshold_frames:
+                    active_target = None
+                    close_counter = 0
+
                 continue
 
             i = marker_map[active_target]
+
+            # RESET LOST COUNTER (we see the marker)
+            lost_counter = 0
 
             result = track_marker_pnp(
                 rvecs[i],
@@ -303,7 +319,6 @@ def main(headless=False):
         cap.release()
         cv2.destroyAllWindows()
         print("Shutdown complete")
-
 
 # -----------------------
 # ENTRY
