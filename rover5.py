@@ -89,7 +89,7 @@ def AtMarker2():
     time.sleep(4.5)
     px.set_dir_servo_angle(25)
     px.forward(update_speed(speed))
-    time.sleep(0.1)
+    time.sleep(0.5)
 
 def AtMarker4():
     print("Marker 4 → VEER")
