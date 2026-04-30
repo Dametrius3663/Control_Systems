@@ -164,21 +164,21 @@ def track_marker_pnp(rvec, tvec, reverse=False):
             stop_car()
 
         elif target == 2:
-            AtMarker10()
+            AtMarker2()
             time.sleep(1.5)
             px.forward(update_speed(speed))
             time.sleep(3)
             stop_car()
 
         elif target == 4:
-            AtMarker10()
+            AtMarker4()
             time.sleep(1.5)
             px.forward(update_speed(speed))
             time.sleep(3)
             stop_car()
 
         elif target == 6:
-            AtMarker10()
+            AtMarker6()
             time.sleep(1.5)
             px.forward(update_speed(speed))
             time.sleep(3)
@@ -186,9 +186,9 @@ def track_marker_pnp(rvec, tvec, reverse=False):
 
         elif target == 10:
             AtMarker10()
-            time.sleep(1.5)
-            px.forward(update_speed(speed))
-            time.sleep(3)
+            time.sleep(1)
+            #px.forward(update_speed(speed))
+            #time.sleep(3)
             stop_car()
 
         elif target == 11:
@@ -202,14 +202,14 @@ def track_marker_pnp(rvec, tvec, reverse=False):
             stop_car()
 
         elif target == 15:
-            AtMarker10()
+            AtMarker15()
             time.sleep(1.5)
             px.forward(update_speed(speed))
             time.sleep(3)
             stop_car()
 
         elif target == 17:
-            AtMarker10()
+            AtMarker17()
             time.sleep(1.5)
             px.forward(update_speed(speed))
             time.sleep(3)
