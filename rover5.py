@@ -186,8 +186,8 @@ def track_marker_pnp(rvec, tvec, reverse=False):
 
         elif target == 10:
             AtMarker10()
-            time.sleep(2.5)
-            px.set_dir_servo_angle(0)
+            time.sleep(2.1)
+            px.set_dir_servo_angle(5)
             px.forward(update_speed(speed))
             time.sleep(5)
             stop_car()
