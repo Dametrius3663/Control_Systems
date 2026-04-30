@@ -81,8 +81,14 @@ def AtMarker1():
 
 def AtMarker2():
     print("Marker 2 → VEER")
-    px.set_dir_servo_angle(25)
+    px.set_dir_servo_angle(15)
     px.forward(update_speed(speed))
+    time.sleep(0.15)
+    px.forward(update_speed(speed))
+    time.sleep(1.5)
+    px.set_dir_servo_angle(45)
+    px.forward(update_speed(speed))
+    time.sleep(0.15)
 
 def AtMarker4():
     print("Marker 4 → VEER")
@@ -165,9 +171,12 @@ def track_marker_pnp(rvec, tvec, reverse=False):
 
         elif target == 2:
             AtMarker2()
-            time.sleep(1.5)
+            time.sleep(0.15)
             px.forward(update_speed(speed))
-            time.sleep(3)
+            time.sleep(1.5)
+            px.set_dir_servo_angle(45)
+            px.forward(update_speed(speed))
+            time.sleep(0.15)
             stop_car()
 
         elif target == 4:
@@ -205,7 +214,7 @@ def track_marker_pnp(rvec, tvec, reverse=False):
 
         elif target == 12:
             AtMarker12()
-            time.sleep(3.5)
+            time.sleep(2.9)
             stop_car()
 
         elif target == 15:
@@ -264,8 +273,8 @@ def main(headless=False):
             # TARGET LATCH
             # -----------------------
             if active_target is None:
-                if 10 in marker_map:
-                    active_target = 10
+                if  2 or 10 or 12 in marker_map:
+                    active_target = 2 or 10 or 12
                 elif 1 in marker_map:
                     active_target = 1
                 elif 2 in marker_map:
