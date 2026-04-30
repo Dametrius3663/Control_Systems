@@ -76,7 +76,7 @@ def stop_car():
 # -----------------------
 def AtMarker1():
     print("Marker 1 → VEER")
-    px.set_dir_servo_angle(25)
+    px.set_dir_servo_angle(20)
     px.forward(update_speed(speed))
 
 def AtMarker2():
@@ -192,12 +192,15 @@ def track_marker_pnp(rvec, tvec, reverse=False):
             time.sleep(6.5)
             px.set_dir_servo_angle(-10)
             px.forward(update_speed(speed))
-            time.sleep(0.2)
+            time.sleep(0.5)
             stop_car()
 
         elif target == 11:
             AtMarker11()
             time.sleep(0.15)
+            px.set_dir_servo_angle(10)
+            px.forward(update_speed(speed))
+            time.sleep(0.075)
             stop_car()
 
         elif target == 12:
