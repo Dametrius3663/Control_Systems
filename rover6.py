@@ -7,12 +7,17 @@ from Vision.app.core.config import Config
 import time
 import os
 from datetime import datetime
+import pyttsx3
 
 # Photo capture setup
 save_dir = "captured_images"
 os.makedirs(save_dir, exist_ok=True)
 last_capture_time = 0
 capture_interval = 30  # seconds
+
+# Text-to-speech setup
+engine = pyttsx3.init()
+engine.setProperty('rate', 170)  # speed of speech
 
 # Hardware
 px = Picarx()
@@ -133,6 +138,11 @@ def AtMarker17():
     px.set_dir_servo_angle(25)
     px.forward(update_speed(speed))
 
+#Speech
+def speak(text):
+    engine.say(text)
+    engine.runAndWait()
+
 # TRACKING
 def track_marker_pnp(rvec, tvec, reverse=False):
     global active_target, close_counter
@@ -211,10 +221,14 @@ def main(headless=False):
             #Timed photo capture
             current_time = time.time()
             if current_time - last_capture_time >= capture_interval:
+                stop_car()  # Ensure the car is stopped before capturing
+                speak("Capturing image, please wait.")
                 timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
                 filename = os.path.join(save_dir, f"image_{timestamp}.jpg")
                 cv2.imwrite(filename, frame)
                 last_capture_time = current_time
+                time.sleep(1)  # Brief pause for speech to complete
+                
             corners, ids, _ = detector.detectMarkers(frame)
             # NO MARKER CASE
             if ids is None or len(ids) == 0:
