@@ -137,6 +137,7 @@ def AtMarker17():
 #Speech
 def speak(text):
     os.system(f"espeak '{text}'")
+    print(f"Speaking")
 
 # TRACKING
 def track_marker_pnp(rvec, tvec, reverse=False):
