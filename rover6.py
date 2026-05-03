@@ -94,11 +94,11 @@ def AtMarker4():
     px.forward(update_speed(speed))
     time.sleep(1)
     px.set_dir_servo_angle(-4)
-    time.sleep(2.5)
+    time.sleep(3.2)
 
 def AtMarker6():
     print("Marker 6 → VEER")
-    px.set_dir_servo_angle(25)
+    px.set_dir_servo_angle(-45)
     px.backward(update_speed(speed))
 
 def AtMarker10():
