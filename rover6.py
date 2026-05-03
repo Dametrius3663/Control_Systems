@@ -7,7 +7,6 @@ from Vision.app.core.config import Config
 import time
 import os
 from datetime import datetime
-import pyttsx3
 
 # Photo capture setup
 save_dir = "captured_images"
@@ -15,9 +14,6 @@ os.makedirs(save_dir, exist_ok=True)
 last_capture_time = 0
 capture_interval = 30  # seconds
 
-# Text-to-speech setup
-engine = pyttsx3.init()
-engine.setProperty('rate', 170)  # speed of speech
 
 # Hardware
 px = Picarx()
@@ -140,8 +136,7 @@ def AtMarker17():
 
 #Speech
 def speak(text):
-    engine.say(text)
-    engine.runAndWait()
+    os.system(f"espeak '{text}")
 
 # TRACKING
 def track_marker_pnp(rvec, tvec, reverse=False):
