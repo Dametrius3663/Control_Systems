@@ -134,11 +134,6 @@ def AtMarker17():
     px.set_dir_servo_angle(25)
     px.forward(update_speed(speed))
 
-#Speech
-def speak(text):
-    os.system(f"espeak '{text}'")
-    print(f"Speaking")
-
 # TRACKING
 def track_marker_pnp(rvec, tvec, reverse=False):
     global active_target, close_counter
@@ -218,12 +213,11 @@ def main(headless=False):
             current_time = time.time()
             if current_time - last_capture_time >= capture_interval:
                 stop_car()  # Ensure the car is stopped before capturing
-                speak("Capturing image, please wait.")
                 timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
                 filename = os.path.join(save_dir, f"image_{timestamp}.jpg")
                 cv2.imwrite(filename, frame)
                 last_capture_time = current_time
-                time.sleep(1)  # Brief pause for speech to complete
+                time.sleep(1)  # Brief pause for photo to complete
                 
             corners, ids, _ = detector.detectMarkers(frame)
             # NO MARKER CASE
