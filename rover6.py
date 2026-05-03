@@ -5,10 +5,16 @@ import numpy as np
 from picarx import Picarx
 from Vision.app.core.config import Config
 import time
+import os
+from datetime import datetime
 
-# -----------------------
+# Photo capture setup
+save_dir = "captured_images"
+os.makedirs(save_dir, exist_ok=True)
+last_capture_time = 0
+capture_interval = 30  # seconds
+
 # Hardware
-# -----------------------
 px = Picarx()
 config = Config.get_instance()
 
@@ -27,9 +33,7 @@ if not cap.isOpened():
 detector = aruco.ArucoDetector(aruco_dict, aruco_params)
 marker_length = marker_size / 100
 
-# -----------------------
 # Control
-# -----------------------
 speed = 100
 current_speed = 0
 max_speed = speed
@@ -198,12 +202,19 @@ def track_marker_pnp(rvec, tvec, reverse=False):
         return "close"
 # MAIN LOOP
 def main(headless=False):
-    global active_target, close_counter, lost_counter
+    global active_target, close_counter, lost_counter, last_capture_time
     try:
         while True:
             ret, frame = cap.read()
             if not ret:
                 break
+            #Timed photo capture
+            current_time = time.time()
+            if current_time - last_capture_time >= capture_interval:
+                timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
+                filename = os.path.join(save_dir, f"image_{timestamp}.jpg")
+                cv2.imwrite(filename, frame)
+                last_capture_time = current_time
             corners, ids, _ = detector.detectMarkers(frame)
             # NO MARKER CASE
             if ids is None or len(ids) == 0:
