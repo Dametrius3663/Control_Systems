@@ -5,7 +5,6 @@ import numpy as np
 from picarx import Picarx
 from Vision.app.core.config import Config
 import time
-import threading
 import os
 from datetime import datetime
 
@@ -41,10 +40,6 @@ current_speed = 0
 max_speed = speed
 accel_step = 2
 
-action_thread = None
-stop_action = False
-next_target = None
-
 def update_speed(target_speed):
     global current_speed
     if current_speed < target_speed:
@@ -54,28 +49,6 @@ def update_speed(target_speed):
 
     current_speed = max(0, min(current_speed, max_speed))
     return current_speed
-
-def AtMarker6_thread():
-    global stop_action
-    px.set_dir_servo_angle(-45)
-    px.backward(update_speed(speed))
-    for _ in range(290):
-        if stop_action:
-            break
-        time.sleep(0.01)
-    px.stop()
-    px.set_dir_servo_angle(0)
-
-def AtMarker12_thread():
-    global stop_action
-    px.set_dir_servo_angle(-45)
-    px.backward(update_speed(speed))
-    for _ in range(290):
-        if stop_action:
-            break
-        time.sleep(0.01)
-    px.stop()
-    px.set_dir_servo_angle(0)
 
 # -----------------------
 # STATE
@@ -163,7 +136,7 @@ def AtMarker17():
 
 # TRACKING
 def track_marker_pnp(rvec, tvec, reverse=False):
-    global active_target, close_counter, action_thread, stop_action, next_target
+    global active_target, close_counter
     tvec = np.array(tvec).reshape(3,)
     x = float(tvec[0])
     z = float(tvec[2])
@@ -203,12 +176,11 @@ def track_marker_pnp(rvec, tvec, reverse=False):
             close_counter = 0
             return "close"
         elif target == 6:
-            stop_action = False
-            next_target = 1
-            action_thread = threading.Thread(target=AtMarker6_thread)
-            action_thread.start()
-            active_target = 1
+            AtMarker6()
+            time.sleep(2.9)
+            stop_car()
             close_counter = 0
+            return "close"
         elif target == 10:
             AtMarker10()
             stop_car()
@@ -224,12 +196,11 @@ def track_marker_pnp(rvec, tvec, reverse=False):
             close_counter = 0
             return "close"
         elif target == 12:
-            stop_action = False
-            next_target = 2
-            action_thread = threading.Thread(target=AtMarker12_thread)
-            action_thread.start()
-            active_target = 2
+            AtMarker12()
+            time.sleep(2.9)
+            stop_car()
             close_counter = 0
+            return "close"
         elif target == 15:
             AtMarker15()
             time.sleep(1.5)
@@ -248,7 +219,7 @@ def track_marker_pnp(rvec, tvec, reverse=False):
             return "close"
 # MAIN LOOP
 def main(headless=False):
-    global active_target, close_counter, lost_counter, last_capture_time, action_thread, stop_action, next_target
+    global active_target, close_counter, lost_counter, last_capture_time
     try:
         while True:
             ret, frame = cap.read()
@@ -278,12 +249,6 @@ def main(headless=False):
             )
             marker_map = {int(id_val): i for i, id_val in enumerate(ids.flatten())}
 
-            # Check for next_target
-            if next_target and next_target in marker_map:
-                active_target = next_target
-                stop_action = True
-                next_target = None
-
             # TARGET LATCH (FIXED)
             if active_target is None:
                 priority_targets = [2, 10, 12, 1, 4, 6, 11, 15, 17]
@@ -310,18 +275,12 @@ def main(headless=False):
                 active_target = None
                 close_counter = 0
                 stop_car()
-            # Clean up thread
-            if action_thread and not action_thread.is_alive():
-                action_thread = None
             cv2.aruco.drawDetectedMarkers(frame, corners, ids)
             if not headless:
                 cv2.imshow("Rover", frame)
                 if cv2.waitKey(1) == ord('q'):
                     break
     finally:
-        if action_thread and action_thread.is_alive():
-            stop_action = True
-            action_thread.join(timeout=1)
         stop_car()
         cap.release()
         cv2.destroyAllWindows()
