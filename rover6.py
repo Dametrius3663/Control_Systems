@@ -41,9 +41,9 @@ current_speed = 0
 max_speed = speed
 accel_step = 2
 
-global action_thread = None
-global stop_action = False
-global next_target = None
+action_thread = None
+stop_action = False
+next_target = None
 
 def update_speed(target_speed):
     global current_speed
@@ -56,6 +56,7 @@ def update_speed(target_speed):
     return current_speed
 
 def AtMarker6_thread():
+    global stop_action
     px.set_dir_servo_angle(-45)
     px.backward(update_speed(speed))
     for _ in range(290):
@@ -66,6 +67,7 @@ def AtMarker6_thread():
     px.set_dir_servo_angle(0)
 
 def AtMarker12_thread():
+    global stop_action
     px.set_dir_servo_angle(-45)
     px.backward(update_speed(speed))
     for _ in range(290):
@@ -161,7 +163,7 @@ def AtMarker17():
 
 # TRACKING
 def track_marker_pnp(rvec, tvec, reverse=False):
-    global active_target, close_counter
+    global active_target, close_counter, action_thread, stop_action, next_target
     tvec = np.array(tvec).reshape(3,)
     x = float(tvec[0])
     z = float(tvec[2])
@@ -246,7 +248,7 @@ def track_marker_pnp(rvec, tvec, reverse=False):
             return "close"
 # MAIN LOOP
 def main(headless=False):
-    global active_target, close_counter, lost_counter, last_capture_time
+    global active_target, close_counter, lost_counter, last_capture_time, action_thread, stop_action, next_target
     try:
         while True:
             ret, frame = cap.read()
