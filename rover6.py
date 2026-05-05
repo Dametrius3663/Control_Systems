@@ -169,7 +169,7 @@ def track_marker_pnp(rvec, tvec, reverse=False):
         target = active_target
         if target == 1:
             AtMarker1()
-            time.sleep(0.1)
+            time.sleep(0.5)
             stop_car()
             close_counter = 0
             return "close"
@@ -184,8 +184,8 @@ def track_marker_pnp(rvec, tvec, reverse=False):
             close_counter = 0
             return "close"
         elif target == 6:
-            AtMarker6()
-            time.sleep(2.9)
+            AtMarker12()
+            time.sleep(2.25)
             stop_car()
             close_counter = 0
             return "close"
