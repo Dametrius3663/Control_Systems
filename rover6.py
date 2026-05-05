@@ -94,8 +94,8 @@ def AtMarker4():
 def AtMarker6():
     print("Marker 6 → VEER")
     px.set_dir_servo_angle(-45)
-    px.set_motor_speed(1,(speed)*0.2)
-    px.set_motor_speed(2, (-speed))
+    px.set_motor_speed(1,(-speed)*0.2)
+    px.set_motor_speed(2, (speed))
 
 def AtMarker10():
     print("Marker 10 → TURN")
@@ -106,11 +106,11 @@ def AtMarker10():
     px.set_dir_servo_angle(-4)
     px.set_motor_speed(1,(speed))
     px.set_motor_speed(2, (-speed))
-    time.sleep(4.5)
+    time.sleep(4)
     px.set_dir_servo_angle(-20)
     px.set_motor_speed(1,(speed)*0.175)
     px.set_motor_speed(2, (-speed))
-    time.sleep(0.5)
+    time.sleep(0.6)
 
 def AtMarker11():
     print("Marker 11 → STRAIGHT")
@@ -121,8 +121,8 @@ def AtMarker11():
 def AtMarker12():
     print("Marker 12 → REVERSE")
     px.set_dir_servo_angle(-45)
-    px.set_motor_speed(1,(speed)*0.2)
-    px.set_motor_speed(2, (-speed))
+    px.set_motor_speed(1,(-speed)*0.2)
+    px.set_motor_speed(2, (speed))
 
 def AtMarker15():
     print("Marker 15 → VEER")
@@ -201,25 +201,7 @@ def track_marker_pnp(rvec, tvec, reverse=False):
             return "close"
         elif target == 12:
             AtMarker12()
-            time.sleep(2.9)
-            stop_car()
-            close_counter = 0
-            return "close"
-        elif target == 15:
-            AtMarker15()
-            time.sleep(1.5)
-            px.set_motor_speed(1,(speed)*0.2)
-            px.set_motor_speed(2, (-speed))
-            time.sleep(3)
-            stop_car()
-            close_counter = 0
-            return "close"
-        elif target == 17:
-            AtMarker17()
-            time.sleep(1.5)
-            px.set_motor_speed(1,(speed)*0.2)
-            px.set_motor_speed(2, (-speed))
-            time.sleep(3)
+            time.sleep(1.75)
             stop_car()
             close_counter = 0
             return "close"
