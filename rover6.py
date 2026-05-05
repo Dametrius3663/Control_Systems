@@ -206,6 +206,7 @@ def track_marker_pnp(rvec, tvec, reverse=False):
             return "close"
         elif target == 12:
             AtMarker12()
+            time.sleep(2.25)
             close_counter = 0
             return "close"
 # MAIN LOOP
