@@ -102,15 +102,15 @@ def AtMarker10():
     px.set_dir_servo_angle(-45)
     px.set_motor_speed(1,(speed)*0.2)
     px.set_motor_speed(2, (-speed))
-    time.sleep(3)
+    time.sleep(3.75)
     px.set_dir_servo_angle(-4)
     px.set_motor_speed(1,(speed)*0.2)
     px.set_motor_speed(2, (-speed))
-    time.sleep(3)
+    time.sleep(8)
     px.set_dir_servo_angle(-20)
     px.set_motor_speed(1,(speed)*0.2)
     px.set_motor_speed(2, (-speed))
-    time.sleep(1.2)
+    time.sleep(2.2)
 
 def AtMarker11():
     print("Marker 11 → STRAIGHT")
