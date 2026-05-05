@@ -30,7 +30,7 @@ def drive_stop():
     px.set_motor_speed(1, 0)
     px.set_motor_speed(2, 0)
 
-LEFT_MOTOR_TRIM  = -30
+LEFT_MOTOR_TRIM  = -60
 RIGHT_MOTOR_TRIM =  65
 
 # Photo capture setup
