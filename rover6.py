@@ -68,17 +68,17 @@ def AtMarker1():
 def AtMarker2():
     print("Marker 2 → COMPLEX PATH")
     px.set_dir_servo_angle(25)
-    px.set_motor_speed(1,(speed)*0.5)
+    px.set_motor_speed(1,(speed)*0.29)
     px.set_motor_speed(2, (-speed))
     time.sleep(1.5)
     px.set_dir_servo_angle(-2)
-    px.set_motor_speed(1,(speed)*0.3)
+    px.set_motor_speed(1,(speed)*0.2)
     px.set_motor_speed(2, (-speed))
     time.sleep(3.75)
     px.set_dir_servo_angle(25)
-    px.set_motor_speed(1,(speed)*0.5)
+    px.set_motor_speed(1,(speed)*0.29)
     px.set_motor_speed(2, (-speed))
-    time.sleep(2)
+    time.sleep(1.75)
 
 def AtMarker4():
     print("Marker 4 → VEER PATH")
