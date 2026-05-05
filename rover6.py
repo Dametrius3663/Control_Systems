@@ -104,7 +104,7 @@ def AtMarker6():
 def AtMarker10():
     print("Marker 10 → TURN")
     px.set_dir_servo_angle(-45)
-    px.set_motor_speed(1,(speed)*0.175)
+    px.set_motor_speed(1,(speed)*0.15)
     px.set_motor_speed(2, (-speed))
     time.sleep(0.6)
     px.set_dir_servo_angle(-4)
