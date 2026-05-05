@@ -8,10 +8,6 @@ import time
 import os
 from datetime import datetime
 
-def drive_stop():
-    px.set_motor_speed(1, 0)
-    px.set_motor_speed(2, 0)
-
 # Photo capture setup
 save_dir = "captured_images"
 os.makedirs(save_dir, exist_ok=True)
