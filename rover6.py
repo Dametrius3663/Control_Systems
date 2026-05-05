@@ -8,12 +8,36 @@ import time
 import os
 from datetime import datetime
 
+def drive_forward(speed):
+    """
+    Forward with left/right trim applied.
+    Left wheel = port 1 (weaker, +30 trim applied).
+    Right wheel = port 2 (reference speed, no trim).
+    """
+    l = min(speed + LEFT_MOTOR_TRIM,  100)
+    r = min(speed + RIGHT_MOTOR_TRIM, 100)
+    px.set_motor_speed(1,  l)   # Left
+    px.set_motor_speed(2, -r)   # Right
+
+def drive_backward(speed):
+    """Backward with trim applied."""
+    l = min(speed + LEFT_MOTOR_TRIM,  100)
+    r = min(speed + RIGHT_MOTOR_TRIM, 100)
+    px.set_motor_speed(1, -l)
+    px.set_motor_speed(2,  r)
+
+def drive_stop():
+    px.set_motor_speed(1, 0)
+    px.set_motor_speed(2, 0)
+
+LEFT_MOTOR_TRIM  = 0
+RIGHT_MOTOR_TRIM =  42
+
 # Photo capture setup
 save_dir = "captured_images"
 os.makedirs(save_dir, exist_ok=True)
 last_capture_time = 0
 capture_interval = 30  # seconds
-
 
 # Hardware
 px = Picarx()
@@ -50,9 +74,7 @@ def update_speed(target_speed):
     current_speed = max(0, min(current_speed, max_speed))
     return current_speed
 
-# -----------------------
 # STATE
-# -----------------------
 active_target = None
 reverse_mode = False
 
@@ -62,77 +84,74 @@ close_threshold_frames = 5
 lost_counter = 0
 lost_threshold_frames = 10
 
-# -----------------------
 # SAFE STOP
-# -----------------------
 def stop_car():
     px.stop()
     px.set_dir_servo_angle(0)
 
-# -----------------------
 # ACTIONS
-# -----------------------
 def AtMarker1():
     print("Marker 1 → VEER")
     px.set_dir_servo_angle(20)
-    px.forward(update_speed(speed))
+    drive_forward(update_speed(speed))
 
 def AtMarker2():
     print("Marker 2 → COMPLEX PATH")
     px.set_dir_servo_angle(15)
-    px.forward(update_speed(speed))
+    drive_forward(update_speed(speed))
     time.sleep(0.5)
     px.set_dir_servo_angle(-4)
-    px.forward(update_speed(speed))
+    drive_forward(update_speed(speed))
     time.sleep(3.75)
     px.set_dir_servo_angle(25)
-    px.forward(update_speed(speed))
+    drive_forward(update_speed(speed))
     time.sleep(0.75)
 
 def AtMarker4():
     print("Marker 4 → VEER PATH")
     px.set_dir_servo_angle(-25)
-    px.forward(update_speed(speed))
+    drive_forward(update_speed(speed))
     time.sleep(1)
     px.set_dir_servo_angle(-4)
+    drive_forward(update_speed(speed))
     time.sleep(3.2)
 
 def AtMarker6():
     print("Marker 6 → VEER")
     px.set_dir_servo_angle(-45)
-    px.backward(update_speed(speed))
+    drive_backward(update_speed(speed))
 
 def AtMarker10():
     print("Marker 10 → TURN")
     px.set_dir_servo_angle(-45)
-    px.forward(update_speed(speed))
+    drive_forward(update_speed(speed))
     time.sleep(3)
     px.set_dir_servo_angle(-4)
-    px.forward(update_speed(speed))
+    drive_forward(update_speed(speed))
     time.sleep(3)
     px.set_dir_servo_angle(-20)
-    px.forward(update_speed(speed))
+    drive_forward(update_speed(speed))
     time.sleep(1.2)
 
 def AtMarker11():
     print("Marker 11 → STRAIGHT")
     px.set_dir_servo_angle(-10)
-    px.forward(update_speed(speed))
+    drive_forward(update_speed(speed))
 
 def AtMarker12():
     print("Marker 12 → REVERSE")
     px.set_dir_servo_angle(-45)
-    px.backward(update_speed(speed))
+    drive_backward(update_speed(speed))
 
 def AtMarker15():
     print("Marker 15 → VEER")
     px.set_dir_servo_angle(25)
-    px.forward(update_speed(speed))
+    drive_forward(update_speed(speed))
 
 def AtMarker17():
     print("Marker 17 → VEER")
     px.set_dir_servo_angle(25)
-    px.forward(update_speed(speed))
+    drive_forward(update_speed(speed))
 
 # TRACKING
 def track_marker_pnp(rvec, tvec, reverse=False):
@@ -190,7 +209,7 @@ def track_marker_pnp(rvec, tvec, reverse=False):
             AtMarker11()
             time.sleep(0.15)
             px.set_dir_servo_angle(10)
-            px.forward(update_speed(speed))
+            drive_forward(update_speed(speed))
             time.sleep(0.075)
             stop_car()
             close_counter = 0
@@ -204,7 +223,7 @@ def track_marker_pnp(rvec, tvec, reverse=False):
         elif target == 15:
             AtMarker15()
             time.sleep(1.5)
-            px.forward(update_speed(speed))
+            drive_forward(update_speed(speed))
             time.sleep(3)
             stop_car()
             close_counter = 0
@@ -212,7 +231,7 @@ def track_marker_pnp(rvec, tvec, reverse=False):
         elif target == 17:
             AtMarker17()
             time.sleep(1.5)
-            px.forward(update_speed(speed))
+            drive_forward(update_speed(speed))
             time.sleep(3)
             stop_car()
             close_counter = 0
@@ -285,9 +304,7 @@ def main(headless=False):
         cap.release()
         cv2.destroyAllWindows()
         print("Shutdown complete")
-# -----------------------
 # ENTRY
-# -----------------------
 if __name__ == "__main__":
     parser = argparse.ArgumentParser()
     parser.add_argument("--headless", action="store_true")
