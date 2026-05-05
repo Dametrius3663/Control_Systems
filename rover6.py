@@ -54,15 +54,16 @@ def stop_car():
     px.stop()
     px.set_dir_servo_angle(0)
 
-# ACTIONS
+# Marker ACTIONS
 def AtMarker1():
-    print("Marker 1 → VEER")
+    print("Marker 1: Veer Right")
     px.set_dir_servo_angle(18)
     px.set_motor_speed(1,(speed)*0.2)
     px.set_motor_speed(2, (-speed))
+    time.sleep(1)
 
 def AtMarker2():
-    print("Marker 2 → COMPLEX PATH")
+    print("Marker 2: Right Turn")
     px.set_dir_servo_angle(25)
     px.set_motor_speed(1,(speed)*0.29)
     px.set_motor_speed(2, (-speed))
@@ -77,7 +78,7 @@ def AtMarker2():
     time.sleep(1.1)
 
 def AtMarker4():
-    print("Marker 4 → VEER PATH")
+    print("Marker 4: Veer Left")
     px.set_dir_servo_angle(-5)
     px.set_motor_speed(1,(speed)*0.2)
     px.set_motor_speed(2, (-speed))
@@ -91,14 +92,8 @@ def AtMarker4():
     px.set_motor_speed(2, (-speed))
     time.sleep(1)
 
-def AtMarker6():
-    print("Marker 6 → VEER")
-    px.set_dir_servo_angle(-45)
-    px.set_motor_speed(1,(-speed)*0.2)
-    px.set_motor_speed(2, (speed))
-
 def AtMarker10():
-    print("Marker 10 → TURN")
+    print("Marker 10: Turn Left")
     px.set_dir_servo_angle(-45)
     px.set_motor_speed(1,(speed)*0.175)
     px.set_motor_speed(2, (-speed))
@@ -112,30 +107,12 @@ def AtMarker10():
     px.set_motor_speed(2, (-speed))
     time.sleep(0.6)
 
-def AtMarker11():
-    print("Marker 11 → STRAIGHT")
-    px.set_dir_servo_angle(-10)
-    px.set_motor_speed(1,(speed)*0.2)
-    px.set_motor_speed(2, (-speed))
-
 def AtMarker12():
-    print("Marker 12 → REVERSE")
+    print("Marker 12: Turn Around")
     px.set_dir_servo_angle(-45)
     px.set_motor_speed(1,(-speed)*0.2)
     px.set_motor_speed(2, (speed))
-
-
-def AtMarker15():
-    print("Marker 15 → VEER")
-    px.set_dir_servo_angle(25)
-    px.set_motor_speed(1,(speed)*0.2)
-    px.set_motor_speed(2, (-speed))
-
-def AtMarker17():
-    print("Marker 17 → VEER")
-    px.set_dir_servo_angle(25)
-    px.set_motor_speed(1,(speed)*0.2)
-    px.set_motor_speed(2, (-speed))
+    time.sleep(2.15)
 
 # TRACKING
 def track_marker_pnp(rvec, tvec, reverse=False):
@@ -154,18 +131,19 @@ def track_marker_pnp(rvec, tvec, reverse=False):
     px.set_motor_speed(1,(speed)*0.2)
     px.set_motor_speed(2, (-speed))
     print(f"[TRACK] id:{active_target} x:{x:.2f} z:{z:.2f} steer:{steer:.2f} close:{close_counter}")
+
     # Frame lock logic
     if z < 1.75:
         close_counter += 1
     else:
         close_counter = 0
+
     if close_counter >= close_threshold_frames:
         print("LOCKED CLOSE → executing action")
         stop_car()
         target = active_target
         if target == 1:
             AtMarker1()
-            time.sleep(1)
             stop_car()
             close_counter = 0
             return "close"
@@ -181,7 +159,6 @@ def track_marker_pnp(rvec, tvec, reverse=False):
             return "close"
         elif target == 6:
             AtMarker12()
-            time.sleep(2.25)
             stop_car()
             close_counter = 0
             return "close"
@@ -190,19 +167,8 @@ def track_marker_pnp(rvec, tvec, reverse=False):
             stop_car()
             close_counter = 0
             return "close"
-        elif target == 11:
-            AtMarker11()
-            time.sleep(0.15)
-            px.set_dir_servo_angle(10)
-            px.set_motor_speed(1,(speed)*0.2)
-            px.set_motor_speed(2,(-speed))
-            time.sleep(0.075)
-            stop_car()
-            close_counter = 0
-            return "close"
         elif target == 12:
             AtMarker12()
-            time.sleep(2.15)
             close_counter = 0
             return "close"
 # MAIN LOOP
@@ -237,9 +203,9 @@ def main(headless=False):
             )
             marker_map = {int(id_val): i for i, id_val in enumerate(ids.flatten())}
 
-            # TARGET LATCH (FIXED)
+            # TARGET LATCH
             if active_target is None:
-                priority_targets = [2, 10, 12, 1, 4, 6, 11, 15, 17]
+                priority_targets = [1, 2, 4, 6, 10, 12]
                 for t in priority_targets:
                     if t in marker_map:
                         active_target = t
