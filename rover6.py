@@ -43,16 +43,6 @@ current_speed = 0
 max_speed = speed
 accel_step = 2
 
-def update_speed(target_speed):
-    global current_speed
-    if current_speed < target_speed:
-        current_speed += accel_step
-    elif current_speed > target_speed:
-        current_speed -= accel_step
-
-    current_speed = max(0, min(current_speed, max_speed))
-    return current_speed
-
 # STATE
 active_target = None
 reverse_mode = False
@@ -72,79 +62,79 @@ def stop_car():
 def AtMarker1():
     print("Marker 1 → VEER")
     px.set_dir_servo_angle(20)
-    px.set_motor_speed(1, update_speed(speed)*0.2)
-    px.set_motor_speed(2, -update_speed(speed))
+    px.set_motor_speed(1,(speed)*0.2)
+    px.set_motor_speed(2, (speed))
 
 def AtMarker2():
     print("Marker 2 → COMPLEX PATH")
     px.set_dir_servo_angle(15)
-    px.set_motor_speed(1, update_speed(speed)*0.2)
-    px.set_motor_speed(2, -update_speed(speed))
+    px.set_motor_speed(1,(speed)*0.2)
+    px.set_motor_speed(2, (speed))
     time.sleep(0.5)
     px.set_dir_servo_angle(-4)
-    px.set_motor_speed(1, update_speed(speed)*0.2)
-    px.set_motor_speed(2, -update_speed(speed))
+    px.set_motor_speed(1,(speed)*0.2)
+    px.set_motor_speed(2, (speed))
     time.sleep(3.75)
     px.set_dir_servo_angle(25)
-    px.set_motor_speed(1, update_speed(speed)*0.2)
-    px.set_motor_speed(2, -update_speed(speed))
+    px.set_motor_speed(1,(speed)*0.2)
+    px.set_motor_speed(2, (speed))
     time.sleep(0.75)
 
 def AtMarker4():
     print("Marker 4 → VEER PATH")
     px.set_dir_servo_angle(-25)
-    px.set_motor_speed(1, update_speed(speed)*0.2)
-    px.set_motor_speed(2, -update_speed(speed))
+    px.set_motor_speed(1,(speed)*0.2)
+    px.set_motor_speed(2, (speed))
     time.sleep(1)
     px.set_dir_servo_angle(-4)
-    px.set_motor_speed(1, update_speed(speed)*0.2)
-    px.set_motor_speed(2, -update_speed(speed))
+    px.set_motor_speed(1,(speed)*0.2)
+    px.set_motor_speed(2, (speed))
     time.sleep(3.2)
 
 def AtMarker6():
     print("Marker 6 → VEER")
     px.set_dir_servo_angle(-45)
-    px.set_motor_speed(1, update_speed(speed)*0.2)
-    px.set_motor_speed(2, -update_speed(speed))
+    px.set_motor_speed(1,(speed)*0.2)
+    px.set_motor_speed(2, (speed))
 
 def AtMarker10():
     print("Marker 10 → TURN")
     px.set_dir_servo_angle(-45)
-    px.set_motor_speed(1, update_speed(speed)*0.2)
-    px.set_motor_speed(2, -update_speed(speed))
+    px.set_motor_speed(1,(speed)*0.2)
+    px.set_motor_speed(2, (speed))
     time.sleep(3)
     px.set_dir_servo_angle(-4)
-    px.set_motor_speed(1, update_speed(speed)*0.2)
-    px.set_motor_speed(2, -update_speed(speed))
+    px.set_motor_speed(1,(speed)*0.2)
+    px.set_motor_speed(2, (speed))
     time.sleep(3)
     px.set_dir_servo_angle(-20)
-    px.set_motor_speed(1, update_speed(speed)*0.2)
-    px.set_motor_speed(2, -update_speed(speed))
+    px.set_motor_speed(1,(speed)*0.2)
+    px.set_motor_speed(2, (speed))
     time.sleep(1.2)
 
 def AtMarker11():
     print("Marker 11 → STRAIGHT")
     px.set_dir_servo_angle(-10)
-    px.set_motor_speed(1, update_speed(speed)*0.2)
-    px.set_motor_speed(2, -update_speed(speed))
+    px.set_motor_speed(1,(speed)*0.2)
+    px.set_motor_speed(2, (speed))
 
 def AtMarker12():
     print("Marker 12 → REVERSE")
     px.set_dir_servo_angle(-45)
-    px.set_motor_speed(1, update_speed(speed)*0.2)
-    px.set_motor_speed(2, -update_speed(speed))
+    px.set_motor_speed(1,(speed)*0.2)
+    px.set_motor_speed(2, (speed))
 
 def AtMarker15():
     print("Marker 15 → VEER")
     px.set_dir_servo_angle(25)
-    px.set_motor_speed(1, update_speed(speed)*0.2)
-    px.set_motor_speed(2, -update_speed(speed))
+    px.set_motor_speed(1,(speed)*0.2)
+    px.set_motor_speed(2, (speed))
 
 def AtMarker17():
     print("Marker 17 → VEER")
     px.set_dir_servo_angle(25)
-    px.set_motor_speed(1, update_speed(speed)*0.2)
-    px.set_motor_speed(2, -update_speed(speed))
+    px.set_motor_speed(1,(speed)*0.2)
+    px.set_motor_speed(2, (speed))
 
 # TRACKING
 def track_marker_pnp(rvec, tvec, reverse=False):
@@ -160,8 +150,8 @@ def track_marker_pnp(rvec, tvec, reverse=False):
         steer *= -1
     steer = float(np.clip(steer, -30, 30))
     px.set_dir_servo_angle(steer)
-    px.set_motor_speed(1, update_speed(speed)*0.2)
-    px.set_motor_speed(2, -update_speed(speed))
+    px.set_motor_speed(1,(speed)*0.2)
+    px.set_motor_speed(2, (speed))
     print(f"[TRACK] id:{active_target} x:{x:.2f} z:{z:.2f} steer:{steer:.2f} close:{close_counter}")
     # Frame lock logic
     if z < 1.75:
@@ -203,8 +193,8 @@ def track_marker_pnp(rvec, tvec, reverse=False):
             AtMarker11()
             time.sleep(0.15)
             px.set_dir_servo_angle(10)
-            px.set_motor_speed(1, update_speed(speed)*0.2)
-            px.set_motor_speed(2, -update_speed(speed))
+            px.set_motor_speed(1,(speed)*0.2)
+            px.set_motor_speed(2,(speed))
             time.sleep(0.075)
             stop_car()
             close_counter = 0
@@ -218,8 +208,8 @@ def track_marker_pnp(rvec, tvec, reverse=False):
         elif target == 15:
             AtMarker15()
             time.sleep(1.5)
-            px.set_motor_speed(1, update_speed(speed)*0.2)
-            px.set_motor_speed(2, -update_speed(speed))
+            px.set_motor_speed(1,(speed)*0.2)
+            px.set_motor_speed(2, (speed))
             time.sleep(3)
             stop_car()
             close_counter = 0
@@ -227,8 +217,8 @@ def track_marker_pnp(rvec, tvec, reverse=False):
         elif target == 17:
             AtMarker17()
             time.sleep(1.5)
-            px.set_motor_speed(1, update_speed(speed)*0.2)
-            px.set_motor_speed(2, -update_speed(speed))
+            px.set_motor_speed(1,(speed)*0.2)
+            px.set_motor_speed(2, (speed))
             time.sleep(3)
             stop_car()
             close_counter = 0
