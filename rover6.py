@@ -78,7 +78,7 @@ def AtMarker2():
     px.set_dir_servo_angle(25)
     px.set_motor_speed(1,(speed)*0.29)
     px.set_motor_speed(2, (-speed))
-    time.sleep(0.8)
+    time.sleep(1.5)
 
 def AtMarker4():
     print("Marker 4 → VEER PATH")
