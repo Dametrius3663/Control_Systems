@@ -106,7 +106,7 @@ def AtMarker10():
     px.set_dir_servo_angle(-45)
     px.set_motor_speed(1,(speed)*0.2)
     px.set_motor_speed(2, (-speed))
-    time.sleep(0.5)
+    time.sleep(1)
     px.set_dir_servo_angle(-4)
     px.set_motor_speed(1,(speed))
     px.set_motor_speed(2, (-speed))
