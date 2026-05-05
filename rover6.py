@@ -206,7 +206,7 @@ def track_marker_pnp(rvec, tvec, reverse=False):
             px.set_motor_speed(1,(speed)*0.2)
             px.set_motor_speed(2,(-speed))
             time.sleep(0.3)
-            px.set_dir_servo_angle(30)
+            px.set_dir_servo_angle(40)
             px.set_motor_speed(1,(speed)*0.2)
             px.set_motor_speed(2,(-speed))
             time.sleep(1.6)
