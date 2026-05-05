@@ -86,8 +86,8 @@ def AtMarker4():
     px.set_motor_speed(1,(speed)*0.2)
     px.set_motor_speed(2, (-speed))
     time.sleep(0.3)
-    px.set_dir_servo_angle(-2)
-    px.set_motor_speed(1,(speed)*0.25)
+    px.set_dir_servo_angle(-4)
+    px.set_motor_speed(1,(speed)*0.22)
     px.set_motor_speed(2, (-speed))
     time.sleep(3.2)
 
