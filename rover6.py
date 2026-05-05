@@ -207,8 +207,10 @@ def track_marker_pnp(rvec, tvec, reverse=False):
         elif target == 12:
             AtMarker12()
             time.sleep(2.25)
-            px.set_motor_speed(1,(speed)*0.2)
             px.set_dir_servo_angle(45)
+            px.set_motor_speed(1,(speed)*0.2)
+            px.set_motor_speed(2,(-speed))
+            time.sleep(0.5)
             px.set_motor_speed(1,(speed)*0.2)
             px.set_motor_speed(2,(-speed))
             time.sleep(2.5)
