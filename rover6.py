@@ -61,7 +61,7 @@ def stop_car():
 # ACTIONS
 def AtMarker1():
     print("Marker 1 → VEER")
-    px.set_dir_servo_angle(20)
+    px.set_dir_servo_angle(18)
     px.set_motor_speed(1,(speed)*0.2)
     px.set_motor_speed(2, (-speed))
 
@@ -169,7 +169,7 @@ def track_marker_pnp(rvec, tvec, reverse=False):
         target = active_target
         if target == 1:
             AtMarker1()
-            time.sleep(0.5)
+            time.sleep(1)
             stop_car()
             close_counter = 0
             return "close"
