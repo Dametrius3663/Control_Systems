@@ -38,7 +38,7 @@ detector = aruco.ArucoDetector(aruco_dict, aruco_params)
 marker_length = marker_size / 100
 
 # Control
-speed = 100
+speed = 200
 current_speed = 0
 max_speed = speed
 accel_step = 2
@@ -106,9 +106,9 @@ def AtMarker10():
     px.set_dir_servo_angle(-4)
     px.set_motor_speed(1,(speed)*0.2)
     px.set_motor_speed(2, (-speed))
-    time.sleep(8)
+    time.sleep(11)
     px.set_dir_servo_angle(-20)
-    px.set_motor_speed(1,(speed)*0.2)
+    px.set_motor_speed(1,(speed)*0.175)
     px.set_motor_speed(2, (-speed))
     time.sleep(2.2)
 
